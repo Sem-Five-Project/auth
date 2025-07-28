@@ -1,13 +1,13 @@
 // controller/AuthController.java
-package com.edu.edu_auth.controller;
+package com.edu.tutor_platform.user.controller;
 
-import com.edu.edu_auth.dto.AuthResponse;
-import com.edu.edu_auth.dto.LoginRequest;
-import com.edu.edu_auth.dto.RegisterRequest;
-import com.edu.edu_auth.entity.User;
-import com.edu.edu_auth.service.AuthService;
-import com.edu.edu_auth.service.UserService;
-import com.edu.edu_auth.service.ProfileDataService;
+import com.edu.tutor_platform.user.dto.AuthResponse;
+import com.edu.tutor_platform.user.dto.LoginRequest;
+import com.edu.tutor_platform.user.dto.RegisterRequest;
+import com.edu.tutor_platform.user.entity.User;
+import com.edu.tutor_platform.user.service.AuthService;
+import com.edu.tutor_platform.user.service.ProfileDataService;
+import com.edu.tutor_platform.user.service.UserService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +19,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 // import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.*;
-
 
 @RestController
 @RequestMapping("/api/auth")
@@ -39,6 +38,7 @@ public class AuthController {
     public String getMethodName() {
         return "Hello " + "World! ";
     }
+
     @Autowired
     private AuthService authService;
 
@@ -55,6 +55,6 @@ public class AuthController {
         response.put("username", user.getUsername());
         response.put("email", user.getEmail());
         return ResponseEntity.ok(response);
-}
-    
+    }
+
 }

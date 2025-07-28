@@ -1,4 +1,4 @@
-package com.edu.edu_auth.dto;
+package com.edu.tutor_platform.user.dto;
 
 public class AuthResponse {
     private String token;

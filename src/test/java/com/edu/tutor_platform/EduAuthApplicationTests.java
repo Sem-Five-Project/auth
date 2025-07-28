@@ -1,4 +1,4 @@
-package com.edu.edu_auth;
+package com.edu.tutor_platform;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

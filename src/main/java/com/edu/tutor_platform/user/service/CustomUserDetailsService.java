@@ -1,8 +1,8 @@
-package com.edu.edu_auth.service;
+package com.edu.tutor_platform.user.service;
 
+import com.edu.tutor_platform.user.entity.User;
+import com.edu.tutor_platform.user.repository.UserRepository;
 
-import com.edu.edu_auth.entity.User;
-import com.edu.edu_auth.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.*;
 import org.springframework.stereotype.Service;
@@ -17,7 +17,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         User user = userRepository.findByEmail(email)
-            .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         return new org.springframework.security.core.userdetails.User(
                 user.getEmail(), user.getPassword(), new ArrayList<>());

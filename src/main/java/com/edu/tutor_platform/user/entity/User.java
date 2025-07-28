@@ -1,4 +1,5 @@
-package com.edu.edu_auth.entity;
+package com.edu.tutor_platform.user.entity;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -13,7 +14,7 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     private String username;
 
     @Column(unique = true)

@@ -1,9 +1,10 @@
 // service/UserService.java
-package com.edu.edu_auth.service;
+package com.edu.tutor_platform.user.service;
 
-import com.edu.edu_auth.dto.RegisterRequest;
-import com.edu.edu_auth.entity.User;
-import com.edu.edu_auth.repository.UserRepository;
+import com.edu.tutor_platform.user.dto.RegisterRequest;
+import com.edu.tutor_platform.user.entity.User;
+import com.edu.tutor_platform.user.repository.UserRepository;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;

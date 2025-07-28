@@ -1,10 +1,11 @@
-package com.edu.edu_auth.service;
+package com.edu.tutor_platform.user.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
-import com.edu.edu_auth.repository.UserRepository;
-import com.edu.edu_auth.util.JwtUtil;
-import com.edu.edu_auth.entity.User;
+import com.edu.tutor_platform.util.JwtUtil;
+import com.edu.tutor_platform.user.entity.User;
+import com.edu.tutor_platform.user.repository.UserRepository;
+
 import org.springframework.stereotype.Service;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,15 +21,14 @@ public class ProfileDataService {
     @Autowired
     private JwtUtil jwtUtil;
 
-    
     public User getLoggedInUser(HttpServletRequest request) {
         String authHeader = request.getHeader("Authorization");
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
             String email = jwtUtil.extractEmail(token); // Extracted from token
-        return userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
+            return userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
+        }
+        throw new RuntimeException("Invalid Authorization header");
     }
-    throw new RuntimeException("Invalid Authorization header");
-}
-    
+
 }

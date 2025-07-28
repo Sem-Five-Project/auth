@@ -1,4 +1,4 @@
-package com.edu.edu_auth;
+package com.edu.tutor_platform;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

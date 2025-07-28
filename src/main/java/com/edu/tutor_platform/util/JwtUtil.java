@@ -1,4 +1,4 @@
-package com.edu.edu_auth.util;
+package com.edu.tutor_platform.util;
 
 import io.jsonwebtoken.*;
 import org.springframework.stereotype.Component;
