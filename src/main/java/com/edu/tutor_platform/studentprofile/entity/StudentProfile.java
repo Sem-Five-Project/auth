@@ -23,7 +23,7 @@ public class StudentProfile {
 
     private String educationLevel;
 
-
+    @Enumerated(EnumType.STRING)
     private Membership membership;
 }
 

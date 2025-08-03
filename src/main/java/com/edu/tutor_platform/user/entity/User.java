@@ -3,6 +3,7 @@ package com.edu.tutor_platform.user.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.*;
 
@@ -38,7 +39,8 @@ public class User {
             message = "Password must be minimum 8 characters, with at least one uppercase letter, one number and one special character")
     private String password;
 
-    @NotBlank(message = "Role is required")
+    @NotNull(message = "Role is required")
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UserRole role;
 
