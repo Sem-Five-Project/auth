@@ -4,16 +4,11 @@ package com.edu.tutor_platform.user.controller;
 import com.edu.tutor_platform.user.dto.AuthResponse;
 import com.edu.tutor_platform.user.dto.LoginRequest;
 import com.edu.tutor_platform.user.dto.RegisterRequest;
-import com.edu.tutor_platform.user.entity.User;
 import com.edu.tutor_platform.user.service.AuthService;
 import com.edu.tutor_platform.user.service.ProfileDataService;
 import com.edu.tutor_platform.user.service.UserService;
 
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-
-import java.util.HashMap;
-import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -29,7 +24,7 @@ public class AuthController {
     private final ProfileDataService profileDataService;
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody RegisterRequest request) {
+    public ResponseEntity<String> register(@RequestBody RegisterRequest request){
         userService.register(request);
         return ResponseEntity.ok("User registered successfully!");
     }
@@ -48,13 +43,13 @@ public class AuthController {
         return ResponseEntity.ok(new AuthResponse(token));
     }
 
-    @GetMapping("/profile")
-    public ResponseEntity<?> getProfile(HttpServletRequest request) {
-        User user = profileDataService.getLoggedInUser(request);
-        Map<String, Object> response = new HashMap<>();
-        response.put("username", user.getUsername());
-        response.put("email", user.getEmail());
-        return ResponseEntity.ok(response);
-    }
+//    @GetMapping("/profile")
+//    public ResponseEntity<?> getProfile(HttpServletRequest request) {
+//        User user = profileDataService.getLoggedInUser(request);
+//        Map<String, Object> response = new HashMap<>();
+//        response.put("username", user.getname());
+//        response.put("email", user.getEmail());
+//        return ResponseEntity.ok(response);
+//    }
 
 }
