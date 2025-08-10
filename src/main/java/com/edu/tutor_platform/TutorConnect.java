@@ -13,8 +13,10 @@ public class TutorConnect {
 		Dotenv dotenv = Dotenv.load();
 		String dbUsername = dotenv.get("DB_USERNAME");
 		String dbPassword = dotenv.get("DB_PASSWORD");
+		String dbUrl = dotenv.get("DB_URL");
 
-		if (dbUsername != null && dbPassword != null) {
+		if (dbUsername != null && dbPassword != null && dbUrl != null) {
+			System.setProperty("spring.datasource.url", dbUrl);
 			System.setProperty("spring.datasource.username", dbUsername);
 			System.setProperty("spring.datasource.password", dbPassword);
 		} else {
@@ -22,9 +24,6 @@ public class TutorConnect {
 			System.exit(1);
 		}
 
-		System.setProperty("spring.datasource.url", "jdbc:postgresql://aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres");
-		System.setProperty("spring.datasource.username", dotenv.get("DB_USERNAME"));
-		System.setProperty("spring.datasource.password", dotenv.get("DB_PASSWORD"));
 
 		SpringApplication.run(TutorConnect.class, args);
 	}
