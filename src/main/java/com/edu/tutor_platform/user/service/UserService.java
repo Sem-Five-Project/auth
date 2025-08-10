@@ -1,10 +1,7 @@
 // service/UserService.java
 package com.edu.tutor_platform.user.service;
 
-import com.edu.tutor_platform.studentprofile.entity.StudentProfile;
 import com.edu.tutor_platform.studentprofile.service.StudentProfileService;
-import com.edu.tutor_platform.tutorprofile.entity.TutorProfile;
-import com.edu.tutor_platform.tutorprofile.repository.TutorProfileRepository;
 import com.edu.tutor_platform.tutorprofile.service.TutorProfileService;
 import com.edu.tutor_platform.user.dto.RegisterRequest;
 import com.edu.tutor_platform.user.entity.User;
