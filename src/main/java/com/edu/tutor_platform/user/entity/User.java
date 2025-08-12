@@ -13,7 +13,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "\"User\"") // Quoted because User is a reserved keyword
+@Table(name = "\"user\"") // Quoted because User is a reserved keyword
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -50,6 +50,7 @@ public class User {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "firebasetoken")
     private String firebaseToken;
 
     @PrePersist

@@ -15,6 +15,8 @@ import org.springframework.http.ResponseEntity;
 // import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -43,6 +45,12 @@ public class AuthController {
         return ResponseEntity.ok(new AuthResponse(token));
     }
 
+    @PostMapping("/Fcmtoken")
+    public ResponseEntity<String> storeFcmtoken(@RequestBody String fcmToken, HttpServletRequest request) {
+        System.out.println(request);
+        userService.storeFcmToken(fcmToken, request);
+        return ResponseEntity.ok("FCMtoken stored successfully!");
+    }
 //    @GetMapping("/profile")
 //    public ResponseEntity<?> getProfile(HttpServletRequest request) {
 //        User user = profileDataService.getLoggedInUser(request);
