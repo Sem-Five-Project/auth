@@ -8,9 +8,12 @@ import com.edu.tutor_platform.user.entity.User;
 import com.edu.tutor_platform.user.exception.EmailAlreadyInUseException;
 import com.edu.tutor_platform.user.repository.UserRepository;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import com.edu.tutor_platform.util.JwtUtil;
 
 @Service
 @RequiredArgsConstructor
@@ -20,6 +23,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final StudentProfileService studentProfileService;
     private final TutorProfileService tutorProfileService;
+    private final JwtUtil jwtUtil;
 
     public void register(RegisterRequest request) {
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
@@ -47,5 +51,24 @@ public class UserService {
                 break;
         }
 
+    }
+
+    public void storeFcmToken(String fcmToken, HttpServletRequest request) {
+        System.out.println("Storing FCM token: " + fcmToken);
+        String authHeader = request.getHeader("Authorization");
+        System.out.println("Authorization header: " + authHeader);
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String jwt = authHeader.substring(7);
+            System.out.println("Extracted JWT: " + jwt);
+            String email = jwtUtil.extractEmail(jwt);
+            System.out.println("Extracted email: " + email);
+            User user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+            System.out.println("User found: " + user.getEmail());
+            user.setFirebaseToken(fcmToken);
+            userRepository.save(user);
+        } else {
+            System.out.println("Authorization header missing or invalid");
+        }
     }
 }
