@@ -9,9 +9,9 @@
 // public interface UserRepository extends JpaRepository<User, Long> {
 //     Optional<User> findByEmail(String email);
 // }
-package com.authsystem.repository;
+package com.edu.tutor_platform.user.repository;
 
-import com.authsystem.entity.User;
+import com.edu.tutor_platform.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

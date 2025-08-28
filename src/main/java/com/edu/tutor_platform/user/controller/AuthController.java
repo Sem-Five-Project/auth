@@ -61,13 +61,13 @@
 // //    }
 
 // }
-package com.authsystem.controller;
+package com.edu.tutor_platform.user.controller;
 
-import com.authsystem.dto.AuthResponse;
-import com.authsystem.dto.LoginRequest;
-import com.authsystem.dto.RegisterRequest;
-import com.authsystem.entity.LoginAttempt;
-import com.authsystem.service.AuthService;
+import com.edu.tutor_platform.user.dto.AuthResponse;
+import com.edu.tutor_platform.user.dto.LoginRequest;
+import com.edu.tutor_platform.user.dto.RegisterRequest;
+import com.edu.tutor_platform.user.entity.LoginAttempt;
+import com.edu.tutor_platform.user.service.AuthService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -224,7 +224,7 @@ public ResponseEntity<?> getCurrentUser(Authentication authentication) {
             ));
         }
 
-        com.authsystem.entity.User user = (com.authsystem.entity.User) authentication.getPrincipal();
+        com.edu.tutor_platform.user.entity.User user = (com.edu.tutor_platform.user.entity.User) authentication.getPrincipal();
 
         return ResponseEntity.ok(Map.of(
             "success", true,
@@ -249,7 +249,7 @@ public ResponseEntity<?> getCurrentUser(Authentication authentication) {
 
     //         // Get full user details
     //         String username = authentication.getName();
-    //         com.authsystem.entity.User user = ((com.authsystem.entity.User) authentication.getPrincipal());
+        //         com.edu.tutor_platform.user.entity.User user = ((com.edu.tutor_platform.user.entity.User) authentication.getPrincipal());
 
     //         // Return current user info
     //         Map<String, Object> userInfo = new HashMap<>();

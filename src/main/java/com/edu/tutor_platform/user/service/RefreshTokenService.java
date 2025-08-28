@@ -1,8 +1,8 @@
-package com.authsystem.service;
+package com.edu.tutor_platform.user.service;
 
-import com.authsystem.entity.RefreshToken;
-import com.authsystem.entity.User;
-import com.authsystem.repository.RefreshTokenRepository;
+import com.edu.tutor_platform.user.entity.RefreshToken;
+import com.edu.tutor_platform.user.entity.User;
+import com.edu.tutor_platform.user.repository.RefreshTokenRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;

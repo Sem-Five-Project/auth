@@ -1,4 +1,75 @@
-package com.authsystem.util;
+// package com.edu.tutor_platform.user.util;
+
+// import io.jsonwebtoken.Claims;
+// import io.jsonwebtoken.Jwts;
+// import io.jsonwebtoken.SignatureAlgorithm;
+// import org.springframework.security.core.userdetails.UserDetails;
+// import org.springframework.stereotype.Component;
+
+// import java.util.Date;
+// import java.util.HashMap;
+// import java.util.Map;
+// import java.util.function.Function;
+
+// @Component
+// public class JwtUtil {
+
+//     private String SECRET_KEY = "your_secret_key"; // Change this to a secure key
+//     private long ACCESS_TOKEN_EXPIRATION = 1000 * 60 * 60; // 1 hour
+//     private long REFRESH_TOKEN_EXPIRATION = 1000 * 60 * 60 * 24 * 7; // 7 days
+
+//     public String generateAccessToken(UserDetails userDetails) {
+//         Map<String, Object> claims = new HashMap<>();
+//         return createToken(claims, userDetails.getUsername(), ACCESS_TOKEN_EXPIRATION);
+//     }
+
+//     public String generateAccessToken(com.edu.tutor_platform.user.entity.User user) {
+//         Map<String, Object> claims = new HashMap<>();
+//         claims.put("userId", user.getId());
+//         claims.put("firstName", user.getFirstName());
+//         claims.put("lastName", user.getLastName());
+//         claims.put("email", user.getEmail());
+//         claims.put("role", user.getRole());
+//         return createToken(claims, user.getUsername(), ACCESS_TOKEN_EXPIRATION);
+//     }
+
+//     private String createToken(Map<String, Object> claims, String subject, long expiration) {
+//         return Jwts.builder()
+//                 .setClaims(claims)
+//                 .setSubject(subject)
+//                 .setIssuedAt(new Date(System.currentTimeMillis()))
+//                 .setExpiration(new Date(System.currentTimeMillis() + expiration))
+//                 .signWith(SignatureAlgorithm.HS256, SECRET_KEY)
+//                 .compact();
+//     }
+
+//     public String extractUsername(String token) {
+//         return extractClaim(token, Claims::getSubject);
+//     }
+
+//     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
+//         final Claims claims = extractAllClaims(token);
+//         return claimsResolver.apply(claims);
+//     }
+
+//     private Claims extractAllClaims(String token) {
+//         return Jwts.parser().setSigningKey(SECRET_KEY).parseClaimsJws(token).getBody();
+//     }
+
+//     public boolean validateToken(String token, UserDetails userDetails) {
+//         final String username = extractUsername(token);
+//         return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+//     }
+
+//     private boolean isTokenExpired(String token) {
+//         return extractExpiration(token).before(new Date());
+//     }
+
+//     private Date extractExpiration(String token) {
+//         return extractClaim(token, Claims::getExpiration);
+//     }
+// }
+package com.edu.tutor_platform.user.util;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
@@ -77,8 +148,8 @@ public class JwtUtil {
         Map<String, Object> claims = new HashMap<>();
         
         // Add role to claims if user is our custom User entity
-        if (userDetails instanceof com.authsystem.entity.User) {
-            com.authsystem.entity.User user = (com.authsystem.entity.User) userDetails;
+        if (userDetails instanceof com.edu.tutor_platform.user.entity.User) {
+            com.edu.tutor_platform.user.entity.User user = (com.edu.tutor_platform.user.entity.User) userDetails;
             System.out.println("Adding role to JWT claims: " + user.getRole());
             claims.put("role", user.getRole());
         }
