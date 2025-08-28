@@ -1,12 +1,10 @@
-package com.authsystem.repository;
-
-import com.authsystem.entity.RefreshToken;
-import com.authsystem.entity.User;
+package com.edu.tutor_platform.user.repository;
+import com.edu.tutor_platform.user.entity.RefreshToken;
+import com.edu.tutor_platform.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
-
 import java.util.Optional;
 
 @Repository

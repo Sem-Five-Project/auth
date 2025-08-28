@@ -2,7 +2,7 @@ package com.edu.tutor_platform.user.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
-import com.edu.tutor_platform.util.JwtUtil;
+import com.edu.tutor_platform.util.JwtUtil1;
 import com.edu.tutor_platform.user.entity.User;
 import com.edu.tutor_platform.user.repository.UserRepository;
 
@@ -19,7 +19,7 @@ public class ProfileDataService {
     private final UserRepository userRepository;
 
     @Autowired
-    private JwtUtil jwtUtil;
+    private JwtUtil1 jwtUtil;
 
     public User getLoggedInUser(HttpServletRequest request) {
         String authHeader = request.getHeader("Authorization");

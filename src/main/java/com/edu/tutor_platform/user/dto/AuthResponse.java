@@ -11,7 +11,7 @@
 //         return token;
 //     }
 // }
-package com.authsystem.dto;
+package com.edu.tutor_platform.user.dto;
 
 public class AuthResponse {
     
