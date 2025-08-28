@@ -43,17 +43,17 @@
 //         return jwtUtil.generateToken(user.getEmail(), user.getRole().name(), user.getName());
 //     }
 // }
-package com.authsystem.service;
+package com.edu.tutor_platform.user.service;
 
-import com.authsystem.dto.AuthResponse;
-import com.authsystem.dto.LoginRequest;
-import com.authsystem.dto.RegisterRequest;
-import com.authsystem.entity.LoginAttempt;
-import com.authsystem.entity.RefreshToken;
-import com.authsystem.entity.User;
-import com.authsystem.repository.LoginAttemptRepository;
-import com.authsystem.repository.UserRepository;
-import com.authsystem.util.JwtUtil;
+import com.edu.tutor_platform.user.dto.AuthResponse;
+import com.edu.tutor_platform.user.dto.LoginRequest;
+import com.edu.tutor_platform.user.dto.RegisterRequest;
+import com.edu.tutor_platform.user.entity.LoginAttempt;
+import com.edu.tutor_platform.user.entity.RefreshToken;
+import com.edu.tutor_platform.user.entity.User;
+import com.edu.tutor_platform.user.repository.LoginAttemptRepository;
+import com.edu.tutor_platform.user.repository.UserRepository;
+import com.edu.tutor_platform.user.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;

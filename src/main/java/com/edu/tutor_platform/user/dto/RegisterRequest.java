@@ -23,7 +23,7 @@
 
 //     private String profilePicture;
 // }
-package com.authsystem.dto;
+package com.edu.tutor_platform.user.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

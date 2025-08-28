@@ -58,7 +58,7 @@
 //         this.createdAt = LocalDateTime.now();
 //     }
 // }
-package com.authsystem.entity;
+package com.edu.tutor_platform.user.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;

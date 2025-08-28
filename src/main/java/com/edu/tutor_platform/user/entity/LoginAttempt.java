@@ -1,4 +1,4 @@
-package com.authsystem.entity;
+package com.edu.tutor_platform.user.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
