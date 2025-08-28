@@ -1,6 +1,6 @@
-package com.authsystem.repository;
+package com.edu.tutor_platform.user.repository;
 
-import com.authsystem.entity.LoginAttempt;
+import com.edu.tutor_platform.user.entity.LoginAttempt;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

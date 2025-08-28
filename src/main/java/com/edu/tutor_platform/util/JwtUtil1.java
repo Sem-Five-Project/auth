@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Component
-public class JwtUtil {
+public class JwtUtil1 {
 
     private final String SECRET = "Hiphop2002@1234Uomaefwefwfsafaefqwf";
     private final Key SECRET_KEY = io.jsonwebtoken.security.Keys.hmacShaKeyFor(SECRET.getBytes());

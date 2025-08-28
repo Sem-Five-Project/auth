@@ -64,10 +64,11 @@
 // }
 
 
-package com.authsystem.config;
+package com.edu.tutor_platform.config;
 
-import com.authsystem.security.JwtAuthenticationFilter;
-import com.authsystem.service.UserDetailsServiceImpl;
+// import com.authsystem.security.JwtAuthenticationFilter;
+import com.edu.tutor_platform.security.JwtAuthenticationFilter;
+import com.edu.tutor_platform.user.service.UserDetailsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

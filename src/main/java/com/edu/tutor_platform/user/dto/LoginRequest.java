@@ -8,7 +8,7 @@
 //     private String password;
 
 // }
-package com.authsystem.dto;
+package com.edu.tutor_platform.user.dto;
 
 import jakarta.validation.constraints.NotBlank;
 
