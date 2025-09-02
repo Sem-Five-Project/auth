@@ -39,10 +39,13 @@ public class TutorCardDTO {
     private String firstName;
     private String lastName;
     private String profileImage;
+    private String bio;
 
     private Integer experience;
     private Double rating;
     private Double classCompletionRate;
+    private Double hourlyRate; // Base hourly rate (can vary by subject)
 
-    private List<TutorSubjectDTO> subjects; // List of subjects and their rates
+    private List<TutorSubjectDTO> subjects; // List of subjects with their specific rates and languages
+    private List<TutorLanguageDTO> languages; // List of languages tutor can teach in
 }

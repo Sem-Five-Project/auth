@@ -120,6 +120,7 @@ import com.edu.tutor_platform.tutorprofile.entity.TutorProfile;
 import com.edu.tutor_platform.tutorprofile.repository.TutorProfileRepository;
 import com.edu.tutor_platform.tutorsearch.dto.TutorCardDTO;
 import com.edu.tutor_platform.tutorsearch.dto.TutorSubjectDTO;
+import com.edu.tutor_platform.tutorsearch.dto.TutorLanguageDTO;
 import com.edu.tutor_platform.tutorsearch.repository.TutorSpecifications;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -166,6 +167,8 @@ public class TutorSearchService {
         dto.setExperience(tutorProfile.getExperienceInMonths());
         dto.setRating(tutorProfile.getRating() != null ? tutorProfile.getRating().doubleValue() : 0.0);
         dto.setClassCompletionRate(tutorProfile.getClassCompletionRate() != null ? tutorProfile.getClassCompletionRate().doubleValue() : 0.0);
+        dto.setHourlyRate(tutorProfile.getHourlyRate() != null ? tutorProfile.getHourlyRate().doubleValue() : 0.0);
+        dto.setBio(tutorProfile.getBio());
 
         // Map associated User fields
         if (tutorProfile.getUser() != null) {
@@ -175,19 +178,33 @@ public class TutorSearchService {
             dto.setProfileImage(tutorProfile.getUser().getProfileImage());
         }
 
-        // Map tutor subjects
+        // Map tutor subjects (NO language - that's separate)
         if (tutorProfile.getTutorSubjects() != null && !tutorProfile.getTutorSubjects().isEmpty()) {
             dto.setSubjects(
                 tutorProfile.getTutorSubjects().stream()
-                    .map(tutorSubject -> new TutorSubjectDTO(
-                        tutorSubject.getSubjectName(),
-                        tutorSubject.getHourlyRate() != null ? tutorSubject.getHourlyRate().doubleValue() : 0.0,
-                        tutorSubject.getLanguage()
-                    ))
+                    .map(tutorSubject -> TutorSubjectDTO.builder()
+                        .subjectId(tutorSubject.getSubject().getSubjectId()) // Subject ID
+                        .subjectName(tutorSubject.getSubject().getName()) // Get name from Subject entity via subject_id
+                        .hourlyRate(tutorSubject.getHourlyRate() != null ? tutorSubject.getHourlyRate().doubleValue() : 0.0) // From tutor_subjects.hourly_rate
+                        .build())
                     .collect(Collectors.toList())
             );
         } else {
             dto.setSubjects(Collections.emptyList());
+        }
+
+        // Map tutor languages (from separate tutor_language table)
+        if (tutorProfile.getTutorLanguages() != null && !tutorProfile.getTutorLanguages().isEmpty()) {
+            dto.setLanguages(
+                tutorProfile.getTutorLanguages().stream()
+                    .map(tutorLanguage -> TutorLanguageDTO.builder()
+                        .languageId(tutorLanguage.getLanguage().getLanguageId())
+                        .languageName(tutorLanguage.getLanguage().getName())
+                        .build())
+                    .collect(Collectors.toList())
+            );
+        } else {
+            dto.setLanguages(Collections.emptyList());
         }
 
         return dto;

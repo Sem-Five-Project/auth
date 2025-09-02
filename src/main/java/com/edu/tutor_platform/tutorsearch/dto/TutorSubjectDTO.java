@@ -23,7 +23,8 @@ import lombok.*;
 @Builder
 public class TutorSubjectDTO {
 
+    private Long subjectId;
     private String subjectName;
     private Double hourlyRate;
-    private String language;
+    // Note: Language is handled separately via TutorLanguageDTO in the main TutorCardDTO
 }

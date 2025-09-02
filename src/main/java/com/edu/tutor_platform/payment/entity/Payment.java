@@ -1,5 +1,6 @@
 package com.edu.tutor_platform.payment.entity;
 
+import com.edu.tutor_platform.booking.entity.Booking;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
@@ -18,4 +19,9 @@ public class Payment {
     private Long studentId;
     private Long tutorId;
     private LocalDateTime timestamp = LocalDateTime.now();
+    
+    // Add relationship with Booking
+    @OneToOne
+    @JoinColumn(name = "booking_id")
+    private Booking booking;
 }

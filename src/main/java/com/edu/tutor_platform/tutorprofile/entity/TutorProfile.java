@@ -50,4 +50,9 @@ public class TutorProfile {
     @Builder.Default
     @OneToMany(mappedBy = "tutorProfile", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<TutorSubject> tutorSubjects = new ArrayList<>();
+
+    // ⭐ Languages relation (many-to-many through junction table)
+    @Builder.Default
+    @OneToMany(mappedBy = "tutorProfile", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<TutorLanguage> tutorLanguages = new ArrayList<>();
 }
