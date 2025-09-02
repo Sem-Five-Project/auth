@@ -30,13 +30,14 @@
 // }
 package com.edu.tutor_platform.tutorprofile.entity;
 
+import com.edu.tutor_platform.subject.entity.Subject;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "tutor_subject")
+@Table(name = "tutor_subjects")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -49,17 +50,19 @@ public class TutorSubject {
     private Long id;
 
     // Many subjects belong to one tutor
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tutor_id", nullable = false)
     private TutorProfile tutorProfile;
 
-    @Column(name = "subject_name", nullable = false)
-    private String subjectName;  // Previously assumed Subject entity
+    // Link to actual Subject entity
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "subject_id", nullable = false)
+    private Subject subject;
 
-    @Column(name = "hourly_rate", precision = 10, scale = 2)
+    @Column(name = "hourly_rate", precision = 10, scale = 2, nullable = false)
     private BigDecimal hourlyRate;
 
-    @Column(name = "language", nullable = false)
-    private String language;  // Previously assumed Language entity
+    // Note: Languages are handled separately via TutorLanguage junction table
+    // No language_id in tutor_subjects table
 
 }
