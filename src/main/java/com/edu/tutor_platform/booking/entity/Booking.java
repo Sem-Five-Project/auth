@@ -32,8 +32,9 @@ public class Booking {
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    // Optional: Link to payment for completed bookings
-    @OneToOne(mappedBy = "booking", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    // Link to payment for completed bookings
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "payment_id")
     private Payment payment;
 
     // Fields for handling time-limited reservations
@@ -43,4 +44,29 @@ public class Booking {
     @Builder.Default
     @Column(name = "is_confirmed")
     private Boolean isConfirmed = false;
+    
+    // Order ID for payment tracking
+    @Column(name = "order_id", unique = true)
+    private String orderId;
+    
+    // Additional booking metadata
+    @Column(name = "session_notes", columnDefinition = "TEXT")
+    private String sessionNotes;
+    
+    @Builder.Default
+    @Column(name = "booking_type")
+    private String bookingType = "individual";
+    
+    @Builder.Default
+    @Column(name = "booking_status")
+    private String bookingStatus = "PENDING"; // PENDING, CONFIRMED, CANCELLED, EXPIRED
+    
+    // Update timestamp when booking is modified
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+    
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }
