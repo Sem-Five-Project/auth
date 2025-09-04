@@ -11,6 +11,7 @@ import com.edu.tutor_platform.payment.util.HashUtil;
 import com.edu.tutor_platform.tutorprofile.entity.TutorProfile;
 import com.edu.tutor_platform.tutorprofile.repository.TutorProfileRepository;
 import java.util.Map;
+import java.util.Optional;
 import java.util.logging.Logger;
 
 @Service
@@ -23,7 +24,9 @@ public class PaymentService {
     @Autowired
     private PaymentRepository paymentRepository;
     @Autowired
-    private TutorProfileRepository tutorProfileRepository;  // Using the correct tutor repository
+    private TutorProfileRepository tutorProfileRepository;
+    @Autowired
+    private AtomicPaymentBookingService atomicPaymentBookingService;
 
     @Value("${payhere.merchant.id}")
     private String merchantId;
@@ -37,43 +40,58 @@ public class PaymentService {
             throw new RuntimeException("Invalid signature");
         }
 
-        if ("2".equals(notification.getStatus_code())) {  // Success
-            // Save payment details
-            Payment payment = new Payment();
-            payment.setOrderId(notification.getOrder_id());
-            payment.setAmount(Double.parseDouble(notification.getPayhere_amount()));
-            payment.setCurrency(notification.getPayhere_currency());
-            payment.setStatus("SUCCESS");
-            
-            // Set IDs from custom form data
+        if ("2".equals(notification.getStatus_code())) {  // Payment Success
             try {
-                if (notification.getStudent_id() != null && !notification.getStudent_id().isEmpty()) {
-                    payment.setStudentId(Long.parseLong(notification.getStudent_id()));
-                    logger.info("Set student ID: " + notification.getStudent_id());
+                // Check if this is an atomic payment-booking transaction
+                Optional<Payment> existingPayment = paymentRepository.findByOrderId(notification.getOrder_id());
+                
+                if (existingPayment.isPresent()) {
+                    // This is an atomic transaction - complete it
+                    atomicPaymentBookingService.completeAtomicPaymentBooking(notification.getOrder_id());
+                    logger.info("Atomic payment-booking completed for order: " + notification.getOrder_id());
+                } else {
+                    // Legacy payment handling (non-atomic)
+                    Payment payment = new Payment();
+                    payment.setOrderId(notification.getOrder_id());
+                    payment.setAmount(Double.parseDouble(notification.getPayhere_amount()));
+                    payment.setCurrency(notification.getPayhere_currency());
+                    payment.setStatus("SUCCESS");
+                    
+                    // Set IDs from custom form data
+                    try {
+                        if (notification.getStudent_id() != null && !notification.getStudent_id().isEmpty()) {
+                            payment.setStudentId(Long.parseLong(notification.getStudent_id()));
+                            logger.info("Set student ID: " + notification.getStudent_id());
+                        }
+                        if (notification.getTutor_id() != null && !notification.getTutor_id().isEmpty()) {
+                            payment.setTutorId(Long.parseLong(notification.getTutor_id()));
+                            logger.info("Set tutor ID: " + notification.getTutor_id());
+                        }
+                        if (notification.getClass_id() != null && !notification.getClass_id().isEmpty()) {
+                            payment.setClassId(Long.parseLong(notification.getClass_id()));
+                            logger.info("Set class ID: " + notification.getClass_id());
+                        }
+                    } catch (NumberFormatException e) {
+                        logger.warning("Invalid ID format in notification: " + e.getMessage());
+                    }
+                    
+                    paymentRepository.save(payment);
+                    logger.info("Legacy payment saved successfully for Order ID: " + notification.getOrder_id());
                 }
-                if (notification.getTutor_id() != null && !notification.getTutor_id().isEmpty()) {
-                    payment.setTutorId(Long.parseLong(notification.getTutor_id()));
-                    logger.info("Set tutor ID: " + notification.getTutor_id());
-                }
-                if (notification.getClass_id() != null && !notification.getClass_id().isEmpty()) {
-                    payment.setClassId(Long.parseLong(notification.getClass_id()));
-                    logger.info("Set class ID: " + notification.getClass_id());
-                }
-            } catch (NumberFormatException e) {
-                logger.warning("Invalid ID format in notification: " + e.getMessage());
+            } catch (Exception e) {
+                logger.severe("Error processing successful payment: " + e.getMessage());
+                throw new RuntimeException("Failed to process successful payment: " + e.getMessage());
             }
-            
-            paymentRepository.save(payment);
-            logger.info("Payment saved successfully for Order ID: " + notification.getOrder_id());
-
-            // Update tutor balance (assume TutorProfile entity has double availableBalance)
-            // TutorProfile tutor = tutorProfileRepository.findById(/* tutorId from context */).orElseThrow();
-            // tutor.setAvailableBalance(tutor.getAvailableBalance() + payment.getAmount());  // Minus fee if any
-            // tutorProfileRepository.save(tutor);
-
-            // Optional: Update student/class status as paid
         } else {
-            // Handle failure (e.g., save as "FAILED")
+            // Payment failed or cancelled
+            String failureReason = "Payment failed with status: " + notification.getStatus_code();
+            logger.warning("Payment failed for order " + notification.getOrder_id() + " - " + failureReason);
+            
+            // Check if this is an atomic transaction and cancel it
+            Optional<Payment> existingPayment = paymentRepository.findByOrderId(notification.getOrder_id());
+            if (existingPayment.isPresent()) {
+                atomicPaymentBookingService.cancelAtomicPaymentBooking(notification.getOrder_id(), failureReason);
+            }
         }
     }
 

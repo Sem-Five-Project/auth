@@ -76,4 +76,22 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     // Delete expired unconfirmed bookings
     void deleteByLockedUntilBeforeAndIsConfirmedFalse(LocalDateTime expirationTime);
+    
+    // Find booking by slot, student and confirmation status (for slot blocking)
+    Optional<Booking> findBySlotInstanceAndStudentProfileAndIsConfirmed(
+            com.edu.tutor_platform.booking.entity.SlotInstance slotInstance,
+            com.edu.tutor_platform.studentprofile.entity.StudentProfile studentProfile,
+            Boolean isConfirmed);
+    
+    // Find expired unconfirmed bookings (alias for cleanup)
+    @Query("SELECT b FROM Booking b WHERE b.isConfirmed = false AND b.lockedUntil < :now")
+    List<Booking> findExpiredUnconfirmedBookings(@Param("now") LocalDateTime now);
+    
+    // Find booking by order ID (for payment processing)
+    @Query("SELECT b FROM Booking b JOIN b.payment p WHERE p.orderId = :orderId")
+    Optional<Booking> findByOrderId(@Param("orderId") String orderId);
+    
+    // Check if student has any pending payments
+    @Query("SELECT COUNT(b) > 0 FROM Booking b WHERE b.studentProfile.studentId = :studentId AND b.isConfirmed = false AND b.lockedUntil > :now")
+    Boolean hasActivePendingBookings(@Param("studentId") Long studentId, @Param("now") LocalDateTime now);
 }
