@@ -34,6 +34,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private UserDetailsServiceImpl userDetailsService;
     
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        String path = request.getRequestURI();
+        logger.info("Checking if JWT filter should be skipped for path: " + path);
+        
+        // Skip JWT filter for these paths
+        boolean shouldSkip = path.startsWith("/api/actuator/") ||
+                            path.startsWith("/actuator/") ||
+                            path.startsWith("/api/auth/") ||
+                            path.startsWith("/api/payment/notify");
+        
+        logger.info("Should skip JWT filter: " + shouldSkip);
+        return shouldSkip;
+    }
+    
+    @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         
