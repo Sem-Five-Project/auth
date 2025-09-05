@@ -122,7 +122,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/api/auth/**", "/api/payment/notify", "/api/actuator/health").permitAll()
+                .requestMatchers("/api/auth/**", "/api/payment/notify", "/actuator/health", "/actuator/info").permitAll()
                 .anyRequest().authenticated()
             )
             .exceptionHandling(exception -> exception
