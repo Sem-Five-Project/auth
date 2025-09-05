@@ -138,8 +138,8 @@ public class SecurityConfig {
 
         http.authenticationProvider(authenticationProvider());
 
-        // Add JWT filter **after fixing shouldNotFilter in JwtAuthenticationFilter**
-       // http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+        // Add JWT filter - now with proper shouldNotFilter implementation
+        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
