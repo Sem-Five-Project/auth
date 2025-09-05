@@ -1,7 +1,7 @@
 # Multi-stage Dockerfile for Spring Boot Application
 
 # Stage 1: Build stage
-FROM maven:3.9.6-openjdk-17-slim AS builder
+FROM maven:3.9.6-eclipse-temurin-17 AS builder
 
 WORKDIR /app
 
@@ -14,7 +14,7 @@ COPY src ./src
 RUN mvn clean package -DskipTests -B
 
 # Stage 2: Runtime stage
-FROM openjdk:17-jdk-slim
+FROM eclipse-temurin:17-jdk-jammy
 
 WORKDIR /app
 
