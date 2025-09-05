@@ -75,10 +75,10 @@ jobs:
 
       - name: Deploy to Railway
         env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+            RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
-          railway login --token $RAILWAY_TOKEN
-          railway up --service ${{ secrets.RAILWAY_SERVICE_ID }}
+            railway up --service ${{ secrets.RAILWAY_SERVICE_ID }}
+
 
   integration-tests:
     name: Integration Tests (Post-Deploy)
