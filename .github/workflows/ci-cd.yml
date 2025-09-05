@@ -95,7 +95,7 @@ jobs:
 
       - name: Run API health check
         run: |
-          curl -f ${{ secrets.RAILWAY_APP_URL }}/actuator/health || exit 1
+          curl -f ${{ secrets.RAILWAY_APP_URL }}/api/actuator/health || exit 1
 
       - name: Run API integration tests
         run: |
