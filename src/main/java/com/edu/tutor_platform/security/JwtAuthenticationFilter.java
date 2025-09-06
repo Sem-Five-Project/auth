@@ -41,8 +41,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // Skip JWT filter for these paths
         boolean shouldSkip = path.startsWith("/api/actuator/") ||
                             path.startsWith("/actuator/") ||
-                            path.startsWith("/api/auth/") ||
-                            path.startsWith("/api/payment/notify");
+                            path.startsWith("/api/auth/");
         
         logger.info("Should skip JWT filter: " + shouldSkip);
         return shouldSkip;
