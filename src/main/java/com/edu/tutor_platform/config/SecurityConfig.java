@@ -117,14 +117,12 @@ public class SecurityConfig {
     }
 
     @Bean
-        
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(authz -> authz
-                // <-- Add this here
-                .requestMatchers("/api/auth/**", "/api/payment/notify", "/api/actuator/**").permitAll()
+                .requestMatchers("/auth/login", "/auth/register", "/auth/refresh", "/auth/check-username","/actuator/**").permitAll()
                 .anyRequest().authenticated()
             )
             .exceptionHandling(exception -> exception
@@ -138,49 +136,19 @@ public class SecurityConfig {
                 })
             );
 
-        // Set the authentication provider
         http.authenticationProvider(authenticationProvider());
 
-        // Add JWT filter
+        // Add JWT filter **after fixing shouldNotFilter in JwtAuthenticationFilter**
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
-
-    // public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-    //     http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
-    //         .csrf(csrf -> csrf.disable())
-    //         .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-    //         .authorizeHttpRequests(authz -> authz
-    //             .requestMatchers("/api/auth/**", "/api/payment/notify", "/api/actuator/**").permitAll()
-    //             .anyRequest().authenticated()
-    //         )
-    //         .exceptionHandling(exception -> exception
-    //             .accessDeniedHandler((request, response, accessDeniedException) -> {
-    //                 System.out.println("Access denied: " + accessDeniedException.getMessage());
-    //                 response.sendError(403, "Access Denied");
-    //             })
-    //             .authenticationEntryPoint((request, response, authException) -> {
-    //                 System.out.println("Authentication failed: " + authException.getMessage());
-    //                 response.sendError(401, "Unauthorized");
-    //             })
-    //         );
-
-    //     http.authenticationProvider(authenticationProvider());
-
-    //     // Add JWT filter - now with proper shouldNotFilter implementation
-    //     http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-
-    //     return http.build();
-    // }
-
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList(
                 "http://localhost:3000",
-                "http://localhost:3001",
                 "http://localhost:5173"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
@@ -192,4 +160,3 @@ public class SecurityConfig {
         return source;
     }
 }
-
