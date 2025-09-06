@@ -21,14 +21,18 @@ WORKDIR /app
 # Create non-root user for security
 RUN groupadd -r springboot && useradd -r -g springboot springboot
 
-# Install curl for health checks
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+# Install curl + netcat for health checks & wait-for-db
+RUN apt-get update && apt-get install -y curl netcat && rm -rf /var/lib/apt/lists/*
 
 # Copy JAR from build stage
 COPY --from=builder /app/target/*.jar app.jar
 
-# Change ownership to non-root user
-RUN chown springboot:springboot app.jar
+# Add wait-for-db script
+COPY wait-for-db.sh .
+RUN chmod +x wait-for-db.sh
+
+# Change ownership
+RUN chown springboot:springboot app.jar wait-for-db.sh
 
 # Switch to non-root user
 USER springboot
@@ -36,6 +40,5 @@ USER springboot
 # Expose port
 EXPOSE 8080
 
-
-# Run the application
-ENTRYPOINT ["java", "-Djava.security.egd=file:/dev/./urandom", "-jar", "app.jar"]
+# Start application with DB wait logic
+ENTRYPOINT ["./wait-for-db.sh"]
