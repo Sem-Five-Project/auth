@@ -18,5 +18,4 @@ public class Subject {
 
     @Column(name = "name", nullable = false, unique = true, length = 255)
     private String name;
-
 }

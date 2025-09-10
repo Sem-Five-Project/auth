@@ -1,16 +1,14 @@
 package com.edu.tutor_platform.session.entity;
 
-import com.edu.tutor_platform.studentprofile.entity.StudentProfile;
-import com.edu.tutor_platform.tutorprofile.entity.TutorProfile;
-import com.edu.tutor_platform.subject.entity.Subject;
+
 import jakarta.persistence.*;
 import lombok.*;
-
+import com.edu.tutor_platform.clazz.entity.ClassEntity;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "Session")
+@Table(name = "session")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -23,31 +21,38 @@ public class Session {
     private Long sessionId;
 
     @ManyToOne
-    @JoinColumn(name = "tutor_id", nullable = false, foreignKey = @ForeignKey(name = "fk_session_tutor"))
-    private TutorProfile tutor;
+    @JoinColumn(name = "class_id", nullable = false, foreignKey = @ForeignKey(name = "fk_session_class"))
+    private ClassEntity classEntity;
 
-    @ManyToOne
-    @JoinColumn(name = "subject_id", foreignKey = @ForeignKey(name = "fk_session_subject"))
-    private Subject subject;
+    @Column(name = "session_name", nullable = false)
+    private String sessionName;
 
-    @Column(nullable = false)
+    @Column(name = "start_time", nullable = false)
     private LocalDateTime startTime;
 
+    @Column(name = "end_time")
     private LocalDateTime endTime;
 
-    @Column(length = 10)
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
     private SessionStatus status;
 
+    @Column(name = "link_for_meeting")
     private String linkForMeeting;
 
-    @Column(updatable = false)
+    @Column(name = "link_for_host")
+    private String linkForHost;
+
+    @Column(name = "notification_sent")
+    private boolean notificationSent = false;
+
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
+
 
     @PrePersist
     private void onCreate() {
         createdAt = LocalDateTime.now();
     }
-
-    private boolean notificationSent = false;
 }
