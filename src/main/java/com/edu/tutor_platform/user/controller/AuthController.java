@@ -81,7 +81,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("auth")
 @CrossOrigin(origins = {"http://localhost:5173"}, allowCredentials = "true")
 public class AuthController {
     
@@ -289,6 +289,15 @@ public ResponseEntity<?> getCurrentUser(Authentication authentication) {
         
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/fcmtoken")
+    public ResponseEntity<String> storeFcmtoken(@RequestBody String fcmToken, HttpServletRequest request) {
+        System.out.println(request);
+        authService.storeFcmToken(fcmToken, request);
+        return ResponseEntity.ok("FCMtoken stored successfully!");
+    }
+
+
 }
 
 

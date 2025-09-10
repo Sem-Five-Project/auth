@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "StudentProfile")
+@Table(name = "student_profile")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -18,12 +18,15 @@ public class StudentProfile {
     private Long studentId;
 
     @OneToOne
-    @JoinColumn(name = "user_id", nullable = false, unique = true)
+    @JoinColumn(name = "user_id", nullable = false, unique = true, foreignKey = @ForeignKey(name = "fk_student_user"))
     private User user;
 
+    @Column(name = "education_level")
     private String educationLevel;
 
-    @Enumerated(EnumType.STRING)
-    private Membership membership;
-}
+    @Column(name = "status")
+    private StudentProfileStatus status = StudentProfileStatus.ACTIVE;
 
+    @Column(name="admin_notes")
+    private String adminNotes;
+}
