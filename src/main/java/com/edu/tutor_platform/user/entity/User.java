@@ -60,23 +60,26 @@ public class User implements UserDetails {
     @Column(name = "password", nullable = false)
     private String password;
 
-    @Column(name = "created_at", updatable = false)
+    @Column(name = "profile_image")
+    private String profileImage;
+
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
     @Column(name = "is_enabled")
-    private Boolean enabled = true;
+    private boolean enabled = true;
 
     @Column(name = "is_account_non_expired")
-    private Boolean accountNonExpired = true;
+    private boolean accountNonExpired = true;
 
     @Column(name = "is_account_non_locked")
-    private Boolean accountNonLocked = true;
+    private boolean accountNonLocked = true;
 
     @Column(name = "is_credentials_non_expired")
-    private Boolean credentialsNonExpired = true;
+    private boolean credentialsNonExpired = true;
 
     @Column(name = "firebase_token")
     private String firebaseToken;
@@ -88,11 +91,6 @@ public class User implements UserDetails {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
-
-        if (accountNonExpired == null) accountNonExpired = true;
-        if (accountNonLocked == null) accountNonLocked = true;
-        if (credentialsNonExpired == null) credentialsNonExpired = true;
-        if (enabled == null) enabled = true;
     }
 
     @PreUpdate
@@ -103,12 +101,10 @@ public class User implements UserDetails {
     // UserDetails implementation
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role));
-    }
-
-    @Override
-    public String getUsername() {
-        return username;
+        if (role != null && !role.isEmpty()) {
+            return Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role));
+        }
+        return Collections.emptyList();
     }
 
     @Override
