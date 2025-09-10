@@ -1,7 +1,7 @@
 package com.edu.tutor_platform.clazz.service;
 
-import com.edu.tutor_platform.clazz.entity.TutorAvailability;
-import com.edu.tutor_platform.clazz.repository.TutorAvailabilityRepository;
+import com.edu.tutor_platform.booking.entity.TutorAvailability;
+import com.edu.tutor_platform.booking.repository.TutorAvailabilityRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -34,8 +34,7 @@ public class TutorAvailabilityService {
         return null;
     }
 
-    public List<TutorAvailability> getByTutorId(Integer tutorId) {
-        
-        return repository.findByTutorId(tutorId);
+    public List<TutorAvailability> getByTutorId(Long tutorId) {
+        return repository.findByTutorProfileTutorId(tutorId);
     }
 }

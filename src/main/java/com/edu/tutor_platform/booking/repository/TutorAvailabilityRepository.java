@@ -1,3 +1,4 @@
+
 package com.edu.tutor_platform.booking.repository;
 
 import com.edu.tutor_platform.booking.entity.TutorAvailability;
@@ -11,6 +12,9 @@ import java.util.List;
 
 @Repository
 public interface TutorAvailabilityRepository extends JpaRepository<TutorAvailability, Long> {
+    // Fetch recurring availabilities with slotInstances to avoid lazy init error
+    @Query("SELECT ta FROM TutorAvailability ta LEFT JOIN FETCH ta.slotInstances WHERE ta.recurring = true")
+    List<TutorAvailability> findRecurringWithSlots();
 
     // Find all availability for a specific tutor
     List<TutorAvailability> findByTutorProfileTutorId(Long tutorId);
@@ -26,20 +30,19 @@ public interface TutorAvailabilityRepository extends JpaRepository<TutorAvailabi
 
     // Check if tutor has availability on a specific day and time range
     @Query("SELECT ta FROM TutorAvailability ta WHERE ta.tutorProfile.tutorId = :tutorId " +
-           "AND ta.dayOfWeek = :dayOfWeek " +
-           "AND ta.startTime <= :endTime AND ta.endTime >= :startTime")
+            "AND ta.dayOfWeek = :dayOfWeek " +
+            "AND ta.startTime <= :endTime AND ta.endTime >= :startTime")
     List<TutorAvailability> findOverlappingAvailability(
-        @Param("tutorId") Long tutorId,
-        @Param("dayOfWeek") DayOfWeek dayOfWeek,
-        @Param("startTime") java.time.LocalTime startTime,
-        @Param("endTime") java.time.LocalTime endTime
-    );
+            @Param("tutorId") Long tutorId,
+            @Param("dayOfWeek") DayOfWeek dayOfWeek,
+            @Param("startTime") java.time.LocalTime startTime,
+            @Param("endTime") java.time.LocalTime endTime);
 
     // Delete availability by tutor ID
     void deleteByTutorProfileTutorId(Long tutorId);
 
     // Find availability that needs slot generation (recurring slots)
     @Query("SELECT ta FROM TutorAvailability ta WHERE ta.recurring = true " +
-           "AND ta.tutorProfile.tutorId = :tutorId")
+            "AND ta.tutorProfile.tutorId = :tutorId")
     List<TutorAvailability> findRecurringAvailabilityForTutor(@Param("tutorId") Long tutorId);
 }
