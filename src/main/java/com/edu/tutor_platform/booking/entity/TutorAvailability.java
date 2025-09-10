@@ -2,6 +2,9 @@ package com.edu.tutor_platform.booking.entity;
 
 import com.edu.tutor_platform.booking.enums.DayOfWeek;
 import com.edu.tutor_platform.tutorprofile.entity.TutorProfile;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -23,6 +26,8 @@ public class TutorAvailability {
     private Long availabilityId;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JsonManagedReference
+    @JsonBackReference
     @JoinColumn(name = "tutor_id", nullable = false)
     private TutorProfile tutorProfile;
 

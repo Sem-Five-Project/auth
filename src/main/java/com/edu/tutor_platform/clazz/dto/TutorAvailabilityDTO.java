@@ -1,47 +1,21 @@
-package com.edu.tutor_platform.clazz.entity;
-
-import jakarta.persistence.*;
+package com.edu.tutor_platform.clazz.dto;
 
 import java.time.LocalTime;
 
-@Entity(name = "ClazzTutorAvailability") // distinct entity name
-@Table(name = "clazz_tutor_availability") // renamed table to avoid collision with booking.entity.TutorAvailability
-public class TutorAvailability {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "availability_id") // keep same column name for consistency
+public class TutorAvailabilityDTO {
     private Long availabilityId;
-
-    @Column(nullable = false)
-    private Integer tutorId;
-
-    @Column(length = 10)
     private String dayOfWeek;
-
-    @Column(nullable = false)
     private LocalTime startTime;
-
-    @Column(nullable = false)
     private LocalTime endTime;
+    private Boolean recurring;
 
-    @Column(nullable = false)
-    private Boolean recurring = false;
-
-    // Getters and Setters
+    // Getters and setters
     public Long getAvailabilityId() {
         return availabilityId;
     }
 
     public void setAvailabilityId(Long availabilityId) {
         this.availabilityId = availabilityId;
-    }
-
-    public Integer getTutorId() {
-        return tutorId;
-    }
-
-    public void setTutorId(Integer tutorId) {
-        this.tutorId = tutorId;
     }
 
     public String getDayOfWeek() {
