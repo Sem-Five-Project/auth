@@ -16,6 +16,6 @@ public class Subject {
     @Column(name = "subject_id")
     private Long subjectId;
 
-    @Column(name = "name", nullable = false, unique = true)
+    @Column(name = "name", nullable = false, unique = true, length = 255)
     private String name;
 }
