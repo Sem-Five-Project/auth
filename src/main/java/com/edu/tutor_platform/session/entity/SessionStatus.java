@@ -1,8 +1,9 @@
 package com.edu.tutor_platform.session.entity;
 
 public enum SessionStatus {
-    BOOKED,
+    SCHEDULED,
     COMPLETED,
-    CANCELLED
+    CANCELLED,
+    RESCHEDULED
 }
 

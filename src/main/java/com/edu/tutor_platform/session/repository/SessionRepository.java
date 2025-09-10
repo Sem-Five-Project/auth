@@ -12,5 +12,6 @@ public interface SessionRepository extends JpaRepository<Session, Long> {
 
     List<Session> findByStartTimeBetween(LocalDateTime start, LocalDateTime end);
 
-    List<StudentProfile> findParticipantsBySessionId(Long sessionId);
+
+    List<Session> findByStartTimeBeforeAndEndTimeAfter(LocalDateTime before, LocalDateTime after);;
 }

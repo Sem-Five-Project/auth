@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "Subject")
+@Table(name = "subject")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -18,5 +18,4 @@ public class Subject {
 
     @Column(name = "name", nullable = false, unique = true)
     private String name;
-
 }
