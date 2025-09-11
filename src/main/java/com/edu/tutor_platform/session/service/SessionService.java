@@ -58,4 +58,10 @@ public class SessionService {
         session.setNotificationSent(true);
         sessionRepository.save(session);
     }
+
+    public void updateSessionLinks(Session session, String joinUrl, String startUrl) {
+        session.setLinkForMeeting(joinUrl);
+        session.setLinkForHost(startUrl);
+        sessionRepository.save(session);
+    }
 }

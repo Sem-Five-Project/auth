@@ -5,8 +5,10 @@ import com.edu.tutor_platform.clazz.entity.Participants;
 import com.edu.tutor_platform.clazz.service.ParticipantsService;
 import com.edu.tutor_platform.notification.service.EmailService;
 import com.edu.tutor_platform.notification.service.FcmService;
+import com.edu.tutor_platform.session.dto.ZoomMeetingResponse;
 import com.edu.tutor_platform.session.entity.Session;
 import com.edu.tutor_platform.session.service.SessionService;
+import com.edu.tutor_platform.session.service.ZoomMeetingService;
 import com.edu.tutor_platform.tutorprofile.service.TutorProfileService;
 import com.edu.tutor_platform.user.entity.User;
 import lombok.extern.slf4j.Slf4j;
@@ -28,9 +30,13 @@ public class ReminderService {
     private final EmailService emailService;
     private final ParticipantsService participantsService;
     private final TutorProfileService tutorProfileService;
+    private final ZoomMeetingService zoomMeetingService;
 
 
-    public ReminderService( EmailService emailService, SessionService sessionService , ParticipantsService participantsService, TutorProfileService tutorProfileService) {
+
+
+    public ReminderService( EmailService emailService, SessionService sessionService , ParticipantsService participantsService, TutorProfileService tutorProfileService, ZoomMeetingService zoomMeetingService) {
+        this.zoomMeetingService = zoomMeetingService;
         this.tutorProfileService = tutorProfileService;
         this.emailService = emailService;
         this.sessionService = sessionService;
@@ -39,16 +45,28 @@ public class ReminderService {
 
     @Scheduled(fixedRate = 6000)
     public void remind() {
+        System.out.println("Running reminder task at " + LocalDateTime.now());
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime remindTime = now.plusMinutes(15);
         List<Session>  sessions = sessionService.getSessionsStartingBetween(now, remindTime);
+        System.out.println("Found " + sessions.size() + " sessions starting between " + now + " and " + remindTime);
         for (Session session : sessions) {
+            System.out.println("Processing session: " + session.getSessionName() + " starting at " + session.getStartTime());
+            // Create Zoom meeting if links are not already set
+            if ((session.getLinkForHost() == null || session.getLinkForHost().isEmpty()) ||
+                    (session.getLinkForMeeting() == null || session.getLinkForMeeting().isEmpty())) {
+                ZoomMeetingResponse zoomMeetingResponse =zoomMeetingService.createMeeting();
+                sessionService.updateSessionLinks(session, zoomMeetingResponse.getJoin_url(), zoomMeetingResponse.getStart_url());
+            }
+
             if (!session.isNotificationSent()) {
+                System.out.println("Sending notifications for session: " + session.getSessionName());
                 List<Participants> participants = participantsService.findByClassEntity(session.getClassEntity());
                 List<User> students = Stream.concat(
                         participants.stream().map(p -> p.getStudent().getUser()),
                         Stream.of(tutorProfileService.getTutorById(session.getClassEntity().getTutorId()).getUser())
                 ).toList();
+                System.out.println("Notifying " + students.size() + " users.");
                 for (User user : students) {
                     String toEmail = user.getEmail();
                     String token = user.getFirebaseToken();
