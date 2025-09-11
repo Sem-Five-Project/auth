@@ -4,7 +4,6 @@ import com.edu.tutor_platform.session.dto.SessionDto;
 import com.edu.tutor_platform.session.entity.Session;
 import com.edu.tutor_platform.session.exeption.SessionNotFoundException;
 import com.edu.tutor_platform.session.repository.SessionRepository;
-import com.edu.tutor_platform.studentprofile.entity.StudentProfile;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -49,5 +48,14 @@ public class SessionService {
                 .participantLink(session.getLinkForMeeting())
                 .notificationSent(session.isNotificationSent())
                 .build();
+    }
+
+    public List<Session> getSessionsStartingBetween(LocalDateTime now, LocalDateTime remindTime) {
+        return sessionRepository.findByStartTimeBetween(now, remindTime);
+    }
+
+    public void setNotificationSent(Session session) {
+        session.setNotificationSent(true);
+        sessionRepository.save(session);
     }
 }
