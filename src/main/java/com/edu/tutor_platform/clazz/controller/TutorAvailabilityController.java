@@ -16,7 +16,7 @@ public class TutorAvailabilityController {
     @Autowired
     private TutorAvailabilityService service;
 
-    @PostMapping
+    @PostMapping(consumes = "application/json", produces = "application/json")
     public ResponseEntity<TutorAvailability> create(@RequestBody TutorAvailability availability) {
         return ResponseEntity.ok(service.createAvailability(availability));
     }
@@ -27,7 +27,7 @@ public class TutorAvailabilityController {
         return ResponseEntity.noContent().build();
     }
 
-    @PutMapping("/update/{availabilityId}")
+    @PutMapping(value = "/update/{availabilityId}", consumes = "application/json", produces = "application/json")
     public ResponseEntity<TutorAvailability> update(@PathVariable Long availabilityId,
             @RequestBody TutorAvailability updated) {
         TutorAvailability result = service.updateAvailability(availabilityId, updated);

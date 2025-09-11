@@ -27,7 +27,6 @@ public class TutorAvailability {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JsonManagedReference
-    @JsonBackReference
     @JoinColumn(name = "tutor_id", nullable = false)
     private TutorProfile tutorProfile;
 

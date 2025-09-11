@@ -55,4 +55,9 @@ public class TutorProfile {
     @Builder.Default
     @OneToMany(mappedBy = "tutorProfile", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<TutorLanguage> tutorLanguages = new ArrayList<>();
+
+    // Bidirectional mapping for TutorAvailability
+    @com.fasterxml.jackson.annotation.JsonBackReference
+    @OneToOne(mappedBy = "tutorProfile")
+    private com.edu.tutor_platform.booking.entity.TutorAvailability tutorAvailability;
 }
