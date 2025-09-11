@@ -1,7 +1,8 @@
 package com.edu.tutor_platform.clazz.controller;
 // import com.example.demo.dto.SubjectDto;
 // import com.example.demo.service.SubjectService;
-import com.edu.tutor_platform.clazz.dto.SubjectRequest;
+import com.edu.tutor_platform.clazz.dto.TutorSubjectResponse;
+import com.edu.tutor_platform.clazz.dto.TutorSubjectRequest;
 import com.edu.tutor_platform.clazz.service.TutorSubjectService;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,14 +18,16 @@ public class SubjectController {
         this.subjectService = subjectService;
     }
 
+
     @GetMapping("/{tutorId}/subjects")
-    public List<SubjectRequest> getSubjects(@PathVariable Long tutorId) {
-        return subjectService.getVerifiedSubjects(tutorId);
+    public List<TutorSubjectResponse> getTutorSubjects(@PathVariable Long tutorId) {
+        return subjectService.getTutorSubjects(tutorId);
     }
 
+
     @PostMapping("/add")
-    public void addSubjectForTutor(@RequestParam Long tutorId, @RequestParam Long subjectId) {
-        subjectService.addSubjectForTutor(tutorId, subjectId);
+    public void addTutorSubject(@RequestBody TutorSubjectRequest request) {
+        subjectService.addTutorSubject(request);
     }
 
 
