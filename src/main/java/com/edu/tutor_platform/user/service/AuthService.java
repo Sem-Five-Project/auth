@@ -54,6 +54,7 @@ import com.edu.tutor_platform.user.entity.User;
 import com.edu.tutor_platform.user.repository.LoginAttemptRepository;
 import com.edu.tutor_platform.user.repository.UserRepository;
 import com.edu.tutor_platform.user.util.JwtUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -125,6 +126,10 @@ public class AuthService {
                     user.getEmail(),
                     user.getRole()
             );
+
+            user.setLastLogin(LocalDateTime.now());
+            userRepository.save(user);
+
             return new AuthResponse(accessToken, userInfo);
         } catch (Exception e) {
             // Register failed attempt
@@ -162,14 +167,15 @@ public class AuthService {
             
             // Create new user
             System.out.println("Creating user with role: " + registerRequest.getRole());
-            User user = new User(
-                    registerRequest.getUsername(),
-                    registerRequest.getFirstName(),
-                    registerRequest.getLastName(),
-                    registerRequest.getEmail(),
-                    passwordEncoder.encode(registerRequest.getPassword()),
-                    registerRequest.getRole()
-            );
+            User user = User.builder()
+                    .username(registerRequest.getUsername())
+                    .firstName(registerRequest.getFirstName())
+                    .lastName(registerRequest.getLastName())
+                    .email(registerRequest.getEmail())
+                    .password(passwordEncoder.encode(registerRequest.getPassword()))
+                    .role(registerRequest.getRole())
+                    .build();
+
             System.out.println("User created with role: " + user.getRole());
             
             user = userRepository.save(user);
@@ -306,6 +312,19 @@ public class AuthService {
     
     public LoginAttempt getLoginAttemptStatus(String ipAddress) {
         return loginAttemptRepository.findByIpAddress(ipAddress).orElse(new LoginAttempt(ipAddress));
+    }
+
+    public void storeFcmToken(String fcmToken, HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            String userName = jwtUtil.extractUsername(token); // Extracted from token
+            User user = userRepository.findByUsername(userName).orElseThrow(() -> new RuntimeException("User not found"));
+            user.setFirebaseToken(fcmToken);
+            userRepository.save(user);
+        } else {
+            throw new RuntimeException("Invalid Authorization header");
+        }
     }
 }
 

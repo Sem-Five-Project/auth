@@ -207,5 +207,9 @@ public class JwtUtil {
             return false;
         }
     }
+
+    public String extractEmail(String token) {
+        return extractClaim(token, Claims::getSubject);
+    }
 }
 
