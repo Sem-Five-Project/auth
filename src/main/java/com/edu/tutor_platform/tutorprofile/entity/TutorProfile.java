@@ -9,7 +9,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "tutor_profile") // lowercase + underscore convention
+
+@Table(name = "tutor_profile")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -22,7 +23,7 @@ public class TutorProfile {
     private Long tutorId; // ✅ use getTutorId() instead of getId()
 
     @OneToOne
-    @JoinColumn(name = "user_id", nullable = false, unique = true)
+    @JoinColumn(name = "user_id", nullable = false, unique = true, foreignKey = @ForeignKey(name = "fk_tutor_user"))
     private User user;
 
     @Column(columnDefinition = "TEXT")
@@ -30,6 +31,17 @@ public class TutorProfile {
 
     @Column(name = "hourly_rate", precision = 10, scale = 2)
     private BigDecimal hourlyRate;
+
+
+    @Column(name = "verified", nullable = false)
+    private boolean verified = false;
+
+    @Column(name = "status")
+    @Enumerated(EnumType.ORDINAL)
+    private TutorProfileStatus status = TutorProfileStatus.ACTIVE;
+
+    @Column(name="admin_notes")
+    private String adminNotes;
 
     // ⭐ Rating (0.0 – 5.0) with Lombok @Builder default
     @Builder.Default
