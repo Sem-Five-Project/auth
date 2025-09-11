@@ -21,7 +21,7 @@ public class TutorSubjectService {
 
     public List<TutorSubjectResponse> getTutorSubjects(Long tutorId) {
         String sql = "SELECT ts.*, s.name AS subject_name FROM tutor_subjects ts JOIN subject s ON ts.subject_id = s.subject_id WHERE ts.tutor_id = ?";
-        return jdbcTemplate.query(sql, new Object[]{tutorId}, new RowMapper<TutorSubjectResponse>() {
+        return jdbcTemplate.query(sql, new Object[] { tutorId }, new RowMapper<TutorSubjectResponse>() {
             @Override
             public TutorSubjectResponse mapRow(ResultSet rs, int rowNum) throws SQLException {
                 TutorSubjectResponse response = new TutorSubjectResponse();
@@ -45,7 +45,6 @@ public class TutorSubjectService {
                 request.getSubjectId(),
                 request.getVerification() != null ? request.getVerification().name() : null,
                 request.getVerificationDocs(),
-                request.getHourlyRate()
-        );
+                request.getHourlyRate());
     }
 }
