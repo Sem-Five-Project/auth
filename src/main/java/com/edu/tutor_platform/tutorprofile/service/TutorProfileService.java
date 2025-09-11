@@ -4,6 +4,7 @@ import com.edu.tutor_platform.tutorprofile.dto.TutorDto;
 import com.edu.tutor_platform.tutorprofile.entity.TutorProfile;
 import com.edu.tutor_platform.tutorprofile.exception.TutorNotFoundException;
 import com.edu.tutor_platform.tutorprofile.repository.TutorProfileRepository;
+import com.edu.tutor_platform.user.entity.RefreshToken;
 import com.edu.tutor_platform.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -52,5 +53,10 @@ public class TutorProfileService {
         TutorProfile tutorProfile = tutorProfileRepository.findById(Long.parseLong(id))
                 .orElseThrow(() -> new TutorNotFoundException("Tutor not found with id: " + id));
         tutorProfileRepository.delete(tutorProfile);
+    }
+
+    public TutorProfile getTutorById(Long tutorId) {
+        return tutorProfileRepository.findById(tutorId)
+                .orElseThrow(() -> new TutorNotFoundException("Tutor not found with id: " + tutorId));
     }
 }
