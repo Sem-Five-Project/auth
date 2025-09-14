@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,6 +33,9 @@ public class SlotInstance {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private SlotStatus status = SlotStatus.AVAILABLE;
+
+    @Column(name = "locked_until")
+    private LocalDateTime lockedUntil;
 
     // One-to-many relationship with Booking
     @Builder.Default

@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -54,10 +55,10 @@ public interface SlotInstanceRepository extends JpaRepository<SlotInstance, Long
     // Find all slots for a specific date (for administrative purposes)
     List<SlotInstance> findBySlotDate(LocalDate date);
 
-    // Find locked slots that have expired
-    @Query("SELECT si FROM SlotInstance si JOIN si.bookings b " +
-           "WHERE si.status = 'LOCKED' AND b.lockedUntil < CURRENT_TIMESTAMP")
-    List<SlotInstance> findExpiredLockedSlots();
+    // Find locked slots that have expired (for direct slot locking)
+    @Query("SELECT si FROM SlotInstance si " +
+           "WHERE si.status = 'LOCKED' AND si.lockedUntil IS NOT NULL AND si.lockedUntil < :currentTime")
+    List<SlotInstance> findExpiredLockedSlots(@Param("currentTime") LocalDateTime currentTime);
 
     // Find slots by status
     List<SlotInstance> findByStatus(SlotStatus status);

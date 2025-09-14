@@ -13,17 +13,37 @@ import java.util.List;
 @Builder
 public class UnifiedSearchRequest {
     
-    private String query;                    // Main search term (e.g., "chemistry", "John Smith", "sound waves")
-    private Double minRating;               // Filter: minimum tutor rating
-    private Integer minExperienceMonths;    // Filter: minimum experience in months
-    private List<String> classTypes;        // Filter: ["lesson", "monthly", "individual"]
+    // Search query
+    private String query;                    // Main search term (e.g., "chemistry", "John Smith", "his")
+    
+    // Tutor filters
+    private Double minRating;               // Filter: minimum tutor rating (0.0 - 5.0)
+    private Integer minExperience;          // Filter: minimum experience in months
+    private Double minCompletionRate;       // Filter: minimum class completion rate (0.0 - 100.0)
+    private String tutorName;               // Filter: tutor name (first name or last name)
+    private String name;                    // Alternative field for tutor name
+    
+    // Subject and pricing filters
+    private String subject;                 // Filter: subject name (e.g., "Mathematics", "History")
     private List<Long> subjectIds;          // Filter: specific subject IDs
-    private String sortBy;                  // "rating", "experience", "class_name", "relevance"
+    private Double minPrice;                // Filter: minimum hourly rate
+    private Double maxPrice;                // Filter: maximum hourly rate
+    
+    // Class type filters
+    private List<String> classTypes;        // Filter: ["lesson", "monthly", "individual"]
+    
+    // Sorting options
+    private String sortBy;                  // "rating", "experience", "price", "completion_rate", "relevance"
     private String sortOrder;               // "asc", "desc"
+    
+    // Pagination
     private Integer page;                   // Pagination - page number (0-based)
     private Integer size;                   // Page size (default: 20)
     
-    // Set default values
+    // Search type
+    private String searchType;              // "tutors", "slots", "both" (default: "both")
+    
+    // Getter methods with default values
     public String getQuery() {
         return query != null ? query.trim() : "";
     }
@@ -32,8 +52,32 @@ public class UnifiedSearchRequest {
         return minRating != null ? minRating : 0.0;
     }
     
-    public Integer getMinExperienceMonths() {
-        return minExperienceMonths != null ? minExperienceMonths : 0;
+    public Integer getMinExperience() {
+        return minExperience != null ? minExperience : 0;
+    }
+    
+    public Double getMinCompletionRate() {
+        return minCompletionRate != null ? minCompletionRate : 0.0;
+    }
+    
+    public String getTutorName() {
+        // Use either tutorName or name field
+        if (tutorName != null && !tutorName.trim().isEmpty()) {
+            return tutorName.trim();
+        }
+        return name != null ? name.trim() : "";
+    }
+    
+    public String getSubject() {
+        return subject != null ? subject.trim() : "";
+    }
+    
+    public Double getMinPrice() {
+        return minPrice != null ? minPrice : 0.0;
+    }
+    
+    public Double getMaxPrice() {
+        return maxPrice != null ? maxPrice : Double.MAX_VALUE;
     }
     
     public String getSortBy() {
@@ -50,5 +94,9 @@ public class UnifiedSearchRequest {
     
     public Integer getSize() {
         return size != null ? size : 20;
+    }
+    
+    public String getSearchType() {
+        return searchType != null ? searchType : "both";
     }
 }
