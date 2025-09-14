@@ -1,11 +1,12 @@
 package com.edu.tutor_platform.studentprofile.entity;
 
+import com.edu.tutor_platform.studentprofile.enums.EducationalLevel;
 import com.edu.tutor_platform.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "StudentProfile")
+@Table(name = "student_profile")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -21,9 +22,22 @@ public class StudentProfile {
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
 
+    @Column(name = "admin_notes")
+    private String adminNotes;
+
+    @Builder.Default
+    @Column(name = "status", nullable = false)
+    private Short status = 0;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "educational_level")
+    private EducationalLevel educationalLevel;
+
+    @Column(name = "education_level")
     private String educationLevel;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "membership")
     private Membership membership;
 }
 

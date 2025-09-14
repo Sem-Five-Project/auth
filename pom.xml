@@ -46,6 +46,11 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
+		<!-- <dependency>
+			<groupId>com.example</groupId>
+			<artifactId>payment-module</artifactId>
+			<version>1.0.0</version>
+		</dependency> -->
 
 
 		<dependency>

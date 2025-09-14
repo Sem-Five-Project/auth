@@ -38,10 +38,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
         logger.info("Checking if JWT filter should be skipped for path: " + path);
         
-        // Skip JWT filter for these paths
+        // Skip JWT filter for these specific public paths only
         boolean shouldSkip = path.startsWith("/api/actuator/") ||
                             path.startsWith("/actuator/") ||
-                            path.startsWith("/api/auth/");
+                            path.equals("/api/auth/login") ||
+                            path.equals("/api/auth/register") ||
+                            path.equals("/api/auth/refresh") ||
+                            path.equals("/api/auth/check-username") ||
+                            path.equals("/api/auth/rate-limit-status") ||
+                            path.startsWith("/api/payment/notify");
         
         logger.info("Should skip JWT filter: " + shouldSkip);
         return shouldSkip;
