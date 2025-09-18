@@ -174,6 +174,7 @@ public class SlotManagementService {
                         searchRequest.getSpecificDate(), 
                         SlotStatus.AVAILABLE
                 );
+                log.debug("Found {} available slots for tutor {} on {}", slots.size(), searchRequest.getTutorId(), searchRequest.getSpecificDate());
             } else if (searchRequest.getStartDate() != null && searchRequest.getEndDate() != null) {
                 slots = slotInstanceRepository.findAvailableSlotsByTutorAndDateRange(
                         searchRequest.getTutorId(),

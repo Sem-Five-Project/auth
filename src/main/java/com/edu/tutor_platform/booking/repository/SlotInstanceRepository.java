@@ -3,6 +3,7 @@ package com.edu.tutor_platform.booking.repository;
 import com.edu.tutor_platform.booking.entity.SlotInstance;
 import com.edu.tutor_platform.booking.enums.SlotStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -39,10 +40,10 @@ public interface SlotInstanceRepository extends JpaRepository<SlotInstance, Long
     );
 
     // Find available slots for a tutor within date range
-    @Query("SELECT si FROM SlotInstance si JOIN si.tutorAvailability ta " +
-           "WHERE ta.tutorProfile.tutorId = :tutorId " +
-           "AND si.slotDate BETWEEN :startDate AND :endDate " +
-           "AND si.status = 'AVAILABLE'")
+       @Query("SELECT si FROM SlotInstance si JOIN si.tutorAvailability ta " +
+                 "WHERE ta.tutorProfile.tutorId = :tutorId " +
+                 "AND si.slotDate BETWEEN :startDate AND :endDate " +
+                 "AND si.status = com.edu.tutor_platform.booking.enums.SlotStatus.AVAILABLE")
     List<SlotInstance> findAvailableSlotsByTutorAndDateRange(
         @Param("tutorId") Long tutorId,
         @Param("startDate") LocalDate startDate,
@@ -56,8 +57,9 @@ public interface SlotInstanceRepository extends JpaRepository<SlotInstance, Long
     List<SlotInstance> findBySlotDate(LocalDate date);
 
     // Find locked slots that have expired (for direct slot locking)
-    @Query("SELECT si FROM SlotInstance si " +
-           "WHERE si.status = 'LOCKED' AND si.lockedUntil IS NOT NULL AND si.lockedUntil < :currentTime")
+       @Query("SELECT si FROM SlotInstance si " +
+                 "WHERE si.status = com.edu.tutor_platform.booking.enums.SlotStatus.LOCKED " +
+                 "AND si.lockedUntil IS NOT NULL AND si.lockedUntil < :currentTime")
     List<SlotInstance> findExpiredLockedSlots(@Param("currentTime") LocalDateTime currentTime);
 
     // Find slots by status
@@ -79,4 +81,9 @@ public interface SlotInstanceRepository extends JpaRepository<SlotInstance, Long
         @Param("startDate") LocalDate startDate,
         @Param("endDate") LocalDate endDate
     );
+
+       @Modifying
+       @Query("UPDATE SlotInstance si SET si.status = com.edu.tutor_platform.booking.enums.SlotStatus.LOCKED, si.lockedUntil = :lockedUntil, si.lastReservedStudentId = :studentId " +
+              "WHERE si.slotId IN :slotIds AND si.status = com.edu.tutor_platform.booking.enums.SlotStatus.AVAILABLE")
+       int lockSlots(@Param("slotIds") List<Long> slotIds, @Param("lockedUntil") LocalDateTime lockedUntil, @Param("studentId") Long studentId);
 }
