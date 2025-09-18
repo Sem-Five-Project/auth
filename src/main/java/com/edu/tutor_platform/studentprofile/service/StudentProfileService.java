@@ -12,8 +12,9 @@ import com.edu.tutor_platform.studentprofile.exception.StudentNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
 import java.util.List;
 
 @Service
@@ -80,5 +81,23 @@ public class StudentProfileService {
         refreshTokenService.deleteByUser(studentProfile.getUser());
         // Delete student profile
         studentProfileRepository.delete(studentProfile);
+    }
+
+    public List<StudentDto> getStudents(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<StudentProfile> studentProfiles = studentProfileRepository.findAll(pageable);
+        return studentProfiles.getContent().stream()
+                .map(profile -> new StudentDto(
+                        profile.getStudentId(),
+                        profile.getUser().getFirstName(),
+                        profile.getUser().getLastName(),
+                        profile.getUser().getEmail(),
+                        profile.getStatus(),
+                        profile.getUser().getCreatedAt(),
+                        profile.getUser().getLastLogin(),
+                        profile.getAdminNotes(),
+                        profile.getEducationLevel()
+                ))
+                .toList();
     }
 }

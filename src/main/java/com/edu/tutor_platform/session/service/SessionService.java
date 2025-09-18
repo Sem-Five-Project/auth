@@ -6,6 +6,9 @@ import com.edu.tutor_platform.session.exeption.SessionNotFoundException;
 import com.edu.tutor_platform.session.repository.SessionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -17,14 +20,14 @@ public class SessionService {
 
 
 
-    public List<Session> getAllSessions() {
-        return sessionRepository.findAll();
-    }
-
-    public List<Session> getOngoingSessions() {
-        LocalDateTime now = LocalDateTime.now();
-        return sessionRepository.findByStartTimeBeforeAndEndTimeAfter(now, now);
-    }
+//    public List<Session> getAllSessions() {
+//        return sessionRepository.findAll();
+//    }
+//
+//    public List<Session> getOngoingSessions() {
+//        LocalDateTime now = LocalDateTime.now();
+//        return sessionRepository.findByStartTimeBeforeAndEndTimeAfter(now, now);
+//    }
 
 
     public SessionDto getSessionById(Long id) {
@@ -57,5 +60,15 @@ public class SessionService {
     public void setNotificationSent(Session session) {
         session.setNotificationSent(true);
         sessionRepository.save(session);
+    }
+    public List<Session> getSessions(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("startTime").descending());
+        return sessionRepository.findAll(pageable).getContent();
+    }
+
+    public List<Session> getOngoingSessions(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("startTime").descending());
+        LocalDateTime now = LocalDateTime.now();
+        return sessionRepository.findByStartTimeBeforeAndEndTimeAfter(now, now, pageable).getContent();
     }
 }
