@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -351,5 +352,58 @@ public boolean bookSlotDirectly(Long slotId) {
     log.info("Successfully booked slot {}", slotId);
     return true;
 }
+
+    /**
+     * Bulk-lock a set of slots for 15 minutes. All-or-nothing: if any requested slot
+     * is not AVAILABLE, none are locked and the unavailable IDs are returned.
+     */
+    @Transactional
+    public List<Long> reserveSlotsBulk(List<Long> slotIds, Long studentId) {
+        log.info("Bulk reserve requested for {} slots by student {}", slotIds.size(), studentId);
+
+        // Load all requested slots
+        List<SlotInstance> slots = slotInstanceRepository.findAllById(slotIds);
+
+        // Determine unavailable ones (not AVAILABLE or already locked in future)
+        LocalDateTime now = LocalDateTime.now();
+        List<Long> unavailable = slots.stream()
+                .filter(si -> si.getStatus() != SlotStatus.AVAILABLE)
+                .map(SlotInstance::getSlotId)
+                .collect(Collectors.toList());
+
+        if (!unavailable.isEmpty()) {
+            log.warn("Some slots unavailable: {}. Aborting bulk lock.", unavailable);
+            return unavailable;
+        }
+
+        // Lock all for 15 minutes
+    LocalDateTime lockedUntil = now.plusMinutes(BLOCK_DURATION_MINUTES);
+    int updated = slotInstanceRepository.lockSlots(slotIds, lockedUntil, studentId);
+
+        if (updated != slotIds.size()) {
+            log.warn("Concurrent update detected. Expected {}, updated {}.", slotIds.size(), updated);
+            // Re-check and return those that failed (now unavailable);
+            // also rollback any locks we just applied to keep all-or-nothing
+            List<SlotInstance> refreshed = slotInstanceRepository.findAllById(slotIds);
+            List<Long> failed = refreshed.stream()
+                    .filter(si -> si.getStatus() != SlotStatus.LOCKED)
+                    .map(SlotInstance::getSlotId)
+                    .collect(Collectors.toList());
+
+            // Rollback: release any slots that were locked in this attempt
+            for (SlotInstance si : refreshed) {
+                if (si.getStatus() == SlotStatus.LOCKED && slotIds.contains(si.getSlotId())) {
+                    si.setStatus(SlotStatus.AVAILABLE);
+                    si.setLockedUntil(null);
+                    slotInstanceRepository.save(si);
+                }
+            }
+
+            return failed;
+        }
+
+        log.info("Successfully locked {} slots until {}", updated, lockedUntil);
+        return List.of();
+    }
 
 }

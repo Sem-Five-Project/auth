@@ -1,6 +1,7 @@
 package com.edu.tutor_platform.booking.controller;
 
 import com.edu.tutor_platform.booking.dto.SlotReservationRequestDTO;
+import com.edu.tutor_platform.booking.dto.BulkReservationRequestDTO;
 import com.edu.tutor_platform.booking.service.SlotBlockingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -57,6 +58,44 @@ public class SlotReservationController {
             errorResponse.put("message", "Error reserving slot: " + e.getMessage());
             errorResponse.put("status", "ERROR");
             
+            return ResponseEntity.internalServerError().body(errorResponse);
+        }
+    }
+
+    @PostMapping("/reserve-bulk")
+    public ResponseEntity<Map<String, Object>> reserveSlotsBulk(
+            @Valid @RequestBody BulkReservationRequestDTO request) {
+
+        log.info("Received bulk slot reservation request for slots: {} by student {}", request.getSlotIds(), request.getStudentId());
+
+        try {
+            var unavailable = slotBlockingService.reserveSlotsBulk(request.getSlotIds(), request.getStudentId());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("requestedSlotIds", request.getSlotIds());
+
+            if (unavailable.isEmpty()) {
+                response.put("success", true);
+                response.put("message", "All slots successfully locked for 15 minutes");
+                response.put("status", "LOCKED");
+                return ResponseEntity.ok(response);
+            } else {
+                response.put("success", false);
+                response.put("message", "Some slots are not available for reservation");
+                response.put("unavailableSlots", unavailable);
+                response.put("status", "PARTIAL_UNAVAILABLE");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+        } catch (Exception e) {
+            log.error("Error reserving slots: {}", e.getMessage(), e);
+
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("requestedSlotIds", request.getSlotIds());
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Error reserving slots: " + e.getMessage());
+            errorResponse.put("status", "ERROR");
+
             return ResponseEntity.internalServerError().body(errorResponse);
         }
     }
@@ -143,32 +182,32 @@ public class SlotReservationController {
     /**
      * Check the status of a slot
      */
-    @GetMapping("/slot/{slotId}/status")
-    public ResponseEntity<Map<String, Object>> getSlotStatus(@PathVariable Long slotId) {
+    // @GetMapping("/slot/{slotId}/status")
+    // public ResponseEntity<Map<String, Object>> getSlotStatus(@PathVariable Long slotId) {
         
-        log.info("Checking status for slot: {}", slotId);
+    //     log.info("Checking status for slot: {}", slotId);
         
-        try {
-            boolean isAvailable = slotBlockingService.isSlotAvailable(slotId);
+    //     try {
+    //         boolean isAvailable = slotBlockingService.isSlotAvailable(slotId);
             
-            Map<String, Object> response = new HashMap<>();
-            response.put("slotId", slotId);
-            response.put("isAvailable", isAvailable);
-            response.put("status", isAvailable ? "AVAILABLE" : "NOT_AVAILABLE");
+    //         Map<String, Object> response = new HashMap<>();
+    //         response.put("slotId", slotId);
+    //         response.put("isAvailable", isAvailable);
+    //         response.put("status", isAvailable ? "AVAILABLE" : "NOT_AVAILABLE");
             
-            log.info("Slot {} status: {}", slotId, isAvailable ? "AVAILABLE" : "NOT_AVAILABLE");
-            return ResponseEntity.ok(response);
+    //         log.info("Slot {} status: {}", slotId, isAvailable ? "AVAILABLE" : "NOT_AVAILABLE");
+    //         return ResponseEntity.ok(response);
             
-        } catch (Exception e) {
-            log.error("Error checking slot status: {}", e.getMessage(), e);
+    //     } catch (Exception e) {
+    //         log.error("Error checking slot status: {}", e.getMessage(), e);
             
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("slotId", slotId);
-            errorResponse.put("isAvailable", false);
-            errorResponse.put("status", "ERROR");
-            errorResponse.put("message", "Error checking slot status: " + e.getMessage());
+    //         Map<String, Object> errorResponse = new HashMap<>();
+    //         errorResponse.put("slotId", slotId);
+    //         errorResponse.put("isAvailable", false);
+    //         errorResponse.put("status", "ERROR");
+    //         errorResponse.put("message", "Error checking slot status: " + e.getMessage());
             
-            return ResponseEntity.internalServerError().body(errorResponse);
-        }
-    }
+    //         return ResponseEntity.internalServerError().body(errorResponse);
+    //     }
+    // }
 }
