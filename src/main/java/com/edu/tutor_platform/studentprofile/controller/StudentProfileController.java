@@ -20,8 +20,10 @@ public class StudentProfileController {
     }
 
     @GetMapping("")
-    public ResponseEntity<List<StudentDto>> getAllStudents() {
-        List<StudentDto> students = studentProfileService.getAllStudents();
+    public ResponseEntity<List<StudentDto>> getAllStudents(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        List<StudentDto> students = studentProfileService.getStudents(page, size);
         return ResponseEntity.ok(students);
     }
 

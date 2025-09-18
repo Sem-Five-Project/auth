@@ -6,10 +6,7 @@ import com.edu.tutor_platform.session.entity.Session;
 import com.edu.tutor_platform.session.service.SessionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -24,14 +21,18 @@ public class SessionController {
     }
 
     @GetMapping("")
-    public ResponseEntity<List<Session>> getAllSessions() {
-        List<Session> sessions = sessionService.getAllSessions();
+    public ResponseEntity<List<Session>> getAllSessions(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        List<Session> sessions = sessionService.getSessions(page, size);
         return ResponseEntity.ok(sessions);
     }
 
     @GetMapping("/ongoing")
-    public ResponseEntity<List<Session>> getOngoingSessions() {
-        List<Session> sessions = sessionService.getOngoingSessions();
+    public ResponseEntity<List<Session>> getOngoingSessions(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        List<Session> sessions = sessionService.getOngoingSessions(page, size);
         return ResponseEntity.ok(sessions);
     }
 
@@ -40,8 +41,9 @@ public class SessionController {
         SessionDto sessionDto = sessionService.getSessionById(id);
         return ResponseEntity.ok(sessionDto);
 
-
     }
+
+
 
 
 

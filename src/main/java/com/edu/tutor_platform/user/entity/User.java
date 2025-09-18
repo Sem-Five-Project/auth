@@ -70,16 +70,16 @@ public class User implements UserDetails {
     private LocalDateTime updatedAt;
 
     @Column(name = "is_enabled")
-    private boolean enabled = true;
+    private Boolean enabled = true;
 
     @Column(name = "is_account_non_expired")
-    private boolean accountNonExpired = true;
+    private Boolean accountNonExpired = true;
 
     @Column(name = "is_account_non_locked")
-    private boolean accountNonLocked = true;
+    private Boolean accountNonLocked = true;
 
     @Column(name = "is_credentials_non_expired")
-    private boolean credentialsNonExpired = true;
+    private Boolean credentialsNonExpired = true;
 
     @Column(name = "firebase_token")
     private String firebaseToken;
@@ -91,6 +91,11 @@ public class User implements UserDetails {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
+
+        if (accountNonExpired == null) accountNonExpired = true;
+        if (accountNonLocked == null) accountNonLocked = true;
+        if (credentialsNonExpired == null) credentialsNonExpired = true;
+        if (enabled == null) enabled = true;
     }
 
     @PreUpdate
