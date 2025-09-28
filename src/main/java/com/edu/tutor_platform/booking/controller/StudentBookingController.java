@@ -1,29 +1,25 @@
 package com.edu.tutor_platform.booking.controller;
 
-import com.edu.tutor_platform.booking.dto.BookingDTO;
-import com.edu.tutor_platform.booking.dto.BookingRequestDTO;
 import com.edu.tutor_platform.booking.dto.SlotInstanceDTO;
 import com.edu.tutor_platform.booking.dto.SlotSearchRequestDTO;
-import com.edu.tutor_platform.booking.service.BookingService;
 import com.edu.tutor_platform.booking.service.SlotManagementService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.edu.tutor_platform.booking.dto.SlotInstanceSummaryDTO;
+import com.edu.tutor_platform.booking.enums.DayOfWeek;
 
-import jakarta.validation.Valid;
+
+
+
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/student/bookings")
 @RequiredArgsConstructor
 public class StudentBookingController {
 
-    private final BookingService bookingService;
     private final SlotManagementService slotManagementService;
 
     /**
@@ -64,36 +60,58 @@ public class StudentBookingController {
     /**
      * Get available slots for a specific tutor
      */
-    @GetMapping("/slots/tutor/{tutorId}")
-    public ResponseEntity<List<SlotInstanceDTO>> getTutorSlots(
-            @PathVariable Long tutorId,
-            @RequestParam(required = false) LocalDate startDate,
-            @RequestParam(required = false) LocalDate endDate) {
 
-        SlotSearchRequestDTO searchRequest = SlotSearchRequestDTO.builder()
-                .tutorId(tutorId)
-                .startDate(startDate != null ? startDate : LocalDate.now())
-                .endDate(endDate != null ? endDate : LocalDate.now().plusWeeks(2))
-                .build();
+//     @GetMapping("/slots/tutor/{tutorId}")
+//     public ResponseEntity<List<SlotInstanceDTO>> getTutorSlots(
+//             @PathVariable Long tutorId,
+//             @RequestParam(required = false) String date,
+//             @RequestParam(required = false) Boolean recurring) {
 
-        List<SlotInstanceDTO> slots = slotManagementService.searchAvailableSlots(searchRequest);
-        return ResponseEntity.ok(slots);
-    }
+//         LocalDate targetDate = null;
+//         if (date != null && !date.isBlank()) {
+//             try {
+//                 targetDate = LocalDate.parse(date);
+//             } catch (Exception e) {
+//                 return ResponseEntity.badRequest().build();
+//             }
+//         }
+// System.out.println("Recurring only filter1: " + recurring);
+
+//         SlotSearchRequestDTO.SlotSearchRequestDTOBuilder builder = SlotSearchRequestDTO.builder()
+//                 .tutorId(tutorId);
+
+//         if (targetDate != null) {
+//             builder.specificDate(targetDate);
+//         } else {
+//             builder.startDate(LocalDate.now())
+//                    .endDate(LocalDate.now().plusWeeks(2));
+//         }
+//         if (recurring != null) {
+//             builder.recurringOnly(recurring);
+//         }
+
+//         SlotSearchRequestDTO searchRequest = builder.build();
+
+//         List<SlotInstanceDTO> slots = slotManagementService.searchAvailableSlots(searchRequest);
+//         return ResponseEntity.ok(slots);
+//     }
 
     /**
      * Get available slots for a specific tutor on a specific date
      */
-    @GetMapping("/slots")
+    @GetMapping("/slots1")
     public ResponseEntity<List<SlotInstanceDTO>> getTutorSlotsForDate(
             @RequestParam Long tutorId,
-            @RequestParam String date) {
+            @RequestParam String date,
+            @RequestParam(required = false) Boolean recurring) {
 
         try {
             LocalDate specificDate = LocalDate.parse(date);
-            
+            System.out.println("Recurring only filter12: " + specificDate);
             SlotSearchRequestDTO searchRequest = SlotSearchRequestDTO.builder()
                     .tutorId(tutorId)
                     .specificDate(specificDate)
+                    .recurringOnly(recurring)
                     .build();
 
             List<SlotInstanceDTO> slots = slotManagementService.searchAvailableSlots(searchRequest);
@@ -103,7 +121,51 @@ public class StudentBookingController {
             return ResponseEntity.badRequest().build();
         }
     }
+    @GetMapping("/slots")
+    public ResponseEntity<List<SlotInstanceSummaryDTO>> getSlots(
+            @RequestParam Long tutorId,
+            @RequestParam(required = false) Boolean recurring,
+            @RequestParam(required = false) String weekday,
+            @RequestParam(required = false) Integer month,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate) {
 
+        if (Boolean.TRUE.equals(recurring)) {
+            if (weekday == null || month == null || year == null) {
+                return ResponseEntity.badRequest().build();
+            }
+            DayOfWeek dow;
+            try {
+                dow = DayOfWeek.valueOf(weekday.toUpperCase());
+            } catch (IllegalArgumentException ex) {
+                return ResponseEntity.badRequest().build();
+            }
+        List<SlotInstanceSummaryDTO> slots = slotManagementService.findMonthlyRecurringSlots(tutorId, dow, month, year);
+            return ResponseEntity.ok(slots);
+        }
+
+        SlotSearchRequestDTO searchRequest = SlotSearchRequestDTO.builder()
+                .tutorId(tutorId)
+                .startDate(startDate != null ? startDate : LocalDate.now())
+                .endDate(endDate != null ? endDate : LocalDate.now().plusWeeks(2))
+                .build();
+
+    List<SlotInstanceSummaryDTO> slots = slotManagementService.searchAvailableSlots(searchRequest)
+        .stream()
+        .map(s -> SlotInstanceSummaryDTO.builder()
+            .slotId(s.getSlotId())
+            .availabilityId(s.getAvailabilityId())
+            .slotDate(s.getSlotDate())
+            .dayOfWeek(s.getDayOfWeek())
+            .startTime(s.getStartTime())
+            .endTime(s.getEndTime())
+            .status(s.getStatus())
+            .build())
+        .toList();
+    return ResponseEntity.ok(slots);
+    }
+   
     /**
      * Create a booking reservation (locks slot for limited time)
      */

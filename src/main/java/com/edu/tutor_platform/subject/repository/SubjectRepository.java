@@ -5,7 +5,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-
+import com.edu.tutor_platform.tutorsearch.enums.EDUCATIONAL_LEVEL;
+import com.edu.tutor_platform.tutorsearch.enums.STREAM_TYPE;
 import java.util.List;
 import java.util.Optional;
 
@@ -34,4 +35,13 @@ public interface SubjectRepository extends JpaRepository<Subject, Long> {
      * Check if subject exists by name
      */
     boolean existsByNameIgnoreCase(String name);
+
+
+
+    // ...existing code...
+    // Derived query methods for flexible filtering without null param type ambiguity
+    List<Subject> findByEducationLevelAndStreamTypeOrderByNameAsc(EDUCATIONAL_LEVEL educationLevel, STREAM_TYPE streamType);
+    List<Subject> findByEducationLevelOrderByNameAsc(EDUCATIONAL_LEVEL educationLevel);
+    List<Subject> findByStreamTypeOrderByNameAsc(STREAM_TYPE streamType);
+// ...existing code...
 }
