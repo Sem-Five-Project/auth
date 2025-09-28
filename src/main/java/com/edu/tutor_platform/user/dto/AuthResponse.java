@@ -57,18 +57,25 @@ public class AuthResponse {
         private String lastName;
         private String email;
         private String role;
+        private String profileImage;  // NEW
+
         
         public UserInfo() {}
-        
-        public UserInfo(Long id, String username, String firstName, String lastName, String email, String role) {
+                public UserInfo(Long id, String username, String firstName, String lastName, String email, String role) {
+            this(id, username, firstName, lastName, email, role, null);
+        }
+
+        // Full constructor including profileImage
+        public UserInfo(Long id, String username, String firstName, String lastName, String email, String role, String profileImage) {
             this.id = id;
             this.username = username;
             this.firstName = firstName;
             this.lastName = lastName;
             this.email = email;
             this.role = role;
-            System.out.println("UserInfo constructor called with role: " + role);
+            this.profileImage = profileImage;
         }
+        
         
         public Long getId() {
             return id;
@@ -112,6 +119,13 @@ public class AuthResponse {
         
         public String getRole() {
             return role;
+        }
+        
+        public void setProfileImage(String profileImage) {
+            this.profileImage = profileImage;
+        }
+         public String getProfileImage() {
+            return profileImage;
         }
         
         public void setRole(String role) {

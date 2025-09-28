@@ -123,7 +123,8 @@ public class AuthService {
                     user.getFirstName(),
                     user.getLastName(),
                     user.getEmail(),
-                    user.getRole()
+                    user.getRole(),
+                    user.getProfileImage()
             );
             return new AuthResponse(accessToken, userInfo);
         } catch (Exception e) {
@@ -186,7 +187,8 @@ public class AuthService {
                     user.getFirstName(),
                     user.getLastName(),
                     user.getEmail(),
-                    user.getRole()
+                    user.getRole(),
+                    user.getProfileImage()
             );
             
             return new AuthResponse(accessToken, userInfo);
@@ -226,7 +228,8 @@ public class AuthService {
                                 user.getFirstName(),
                                 user.getLastName(),
                                 user.getEmail(),
-                                user.getRole()
+                                user.getRole(),
+                                user.getProfileImage()
                         );
                         return new AuthResponse(accessToken, userInfo);
                     })

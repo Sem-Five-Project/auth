@@ -2,7 +2,11 @@ package com.edu.tutor_platform.booking.repository;
 
 import com.edu.tutor_platform.booking.entity.SlotInstance;
 import com.edu.tutor_platform.booking.enums.SlotStatus;
+
+import jakarta.persistence.LockModeType;
+
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -40,10 +44,10 @@ public interface SlotInstanceRepository extends JpaRepository<SlotInstance, Long
     );
 
     // Find available slots for a tutor within date range
-       @Query("SELECT si FROM SlotInstance si JOIN si.tutorAvailability ta " +
-                 "WHERE ta.tutorProfile.tutorId = :tutorId " +
-                 "AND si.slotDate BETWEEN :startDate AND :endDate " +
-                 "AND si.status = com.edu.tutor_platform.booking.enums.SlotStatus.AVAILABLE")
+    @Query("SELECT si FROM SlotInstance si JOIN si.tutorAvailability ta " +
+           "WHERE ta.tutorProfile.tutorId = :tutorId " +
+           "AND si.slotDate BETWEEN :startDate AND :endDate " +
+           "AND si.status = 'AVAILABLE'")
     List<SlotInstance> findAvailableSlotsByTutorAndDateRange(
         @Param("tutorId") Long tutorId,
         @Param("startDate") LocalDate startDate,
@@ -57,9 +61,8 @@ public interface SlotInstanceRepository extends JpaRepository<SlotInstance, Long
     List<SlotInstance> findBySlotDate(LocalDate date);
 
     // Find locked slots that have expired (for direct slot locking)
-       @Query("SELECT si FROM SlotInstance si " +
-                 "WHERE si.status = com.edu.tutor_platform.booking.enums.SlotStatus.LOCKED " +
-                 "AND si.lockedUntil IS NOT NULL AND si.lockedUntil < :currentTime")
+    @Query("SELECT si FROM SlotInstance si " +
+           "WHERE si.status = 'LOCKED' AND si.lockedUntil IS NOT NULL AND si.lockedUntil < :currentTime")
     List<SlotInstance> findExpiredLockedSlots(@Param("currentTime") LocalDateTime currentTime);
 
     // Find slots by status
@@ -83,7 +86,28 @@ public interface SlotInstanceRepository extends JpaRepository<SlotInstance, Long
     );
 
        @Modifying
-       @Query("UPDATE SlotInstance si SET si.status = com.edu.tutor_platform.booking.enums.SlotStatus.LOCKED, si.lockedUntil = :lockedUntil, si.lastReservedStudentId = :studentId " +
-              "WHERE si.slotId IN :slotIds AND si.status = com.edu.tutor_platform.booking.enums.SlotStatus.AVAILABLE")
+       @Query("UPDATE SlotInstance si SET si.status = 'LOCKED', si.lockedUntil = :lockedUntil, si.lastReservedStudentId = :studentId WHERE si.slotId IN :slotIds AND si.status = 'AVAILABLE'")
        int lockSlots(@Param("slotIds") List<Long> slotIds, @Param("lockedUntil") LocalDateTime lockedUntil, @Param("studentId") Long studentId);
+
+       
+    @Query("select si from SlotInstance si where si.status = :status and si.lockedUntil is not null and si.lockedUntil < :cutoff")
+    List<SlotInstance> findExpiredLockedSlots(@Param("status") SlotStatus status, @Param("cutoff") LocalDateTime cutoff);
+
+              @Query("""
+                                    select si from SlotInstance si
+                                    join si.tutorAvailability ta
+                                    where ta.recurring = true
+                                           and ta.tutorProfile.tutorId = :tutorId
+                                           and ta.dayOfWeek = :weekday
+                                           and si.slotDate between :start and :end
+                                    """)
+    List<SlotInstance> findRecurringSlotsInMonth(@Param("tutorId") Long tutorId,
+                                                 @Param("weekday") com.edu.tutor_platform.booking.enums.DayOfWeek weekday,
+                                                 @Param("start") LocalDate start,
+                                                 @Param("end") LocalDate end);
+
+
+       @Lock(LockModeType.PESSIMISTIC_WRITE)
+       @Query("select si from SlotInstance si where si.slotId in :ids")
+       List<SlotInstance> findAllForUpdateByIds(@Param("ids") List<Long> ids);
 }

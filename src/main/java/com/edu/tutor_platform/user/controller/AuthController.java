@@ -64,6 +64,7 @@
 package com.edu.tutor_platform.user.controller;
 
 import com.edu.tutor_platform.user.dto.AuthResponse;
+import com.edu.tutor_platform.user.dto.AuthResponse.UserInfo;
 import com.edu.tutor_platform.user.dto.LoginRequest;
 import com.edu.tutor_platform.user.dto.RegisterRequest;
 import com.edu.tutor_platform.user.entity.LoginAttempt;

@@ -1,4 +1,5 @@
 package com.edu.tutor_platform.booking.entity;
+
 import com.edu.tutor_platform.booking.enums.SlotStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -8,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.hibernate.annotations.JdbcType;
 import org.hibernate.dialect.PostgreSQLEnumJdbcType;
+// Native PostgreSQL enum mapping via Hibernate 6 JdbcType
 
 @Entity
 @Table(name = "slot_instance")

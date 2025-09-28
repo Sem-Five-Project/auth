@@ -19,10 +19,7 @@ public class Participants {
     @Column(name = "participant_id")
     private Long participantId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "session_id", nullable = false, foreignKey = @ForeignKey(name = "fk_participant_session"))
-    private Session session;
-
+   
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "student_id", nullable = false, foreignKey = @ForeignKey(name = "fk_participant_student"))
     private StudentProfile student;

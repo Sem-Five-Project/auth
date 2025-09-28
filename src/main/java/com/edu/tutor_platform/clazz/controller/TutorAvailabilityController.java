@@ -1,6 +1,6 @@
 package com.edu.tutor_platform.clazz.controller;
 
-import com.edu.tutor_platform.clazz.entity.TutorAvailability;
+import com.edu.tutor_platform.booking.entity.TutorAvailability;
 import com.edu.tutor_platform.clazz.service.TutorAvailabilityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
