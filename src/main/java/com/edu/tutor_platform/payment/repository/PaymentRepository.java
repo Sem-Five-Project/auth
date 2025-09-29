@@ -9,10 +9,12 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-public interface PaymentRepository extends JpaRepository<Payment, Long> {
+public interface PaymentRepository extends JpaRepository<Payment, String> {
     
     // Find payment by order ID
     Optional<Payment> findByOrderId(String orderId);
+    // Lookup by external UUID (primary key)
+    Optional<Payment> findByPaymentId(String paymentId);
     
     // Find payments by student ID
     List<Payment> findByStudentId(Long studentId);
