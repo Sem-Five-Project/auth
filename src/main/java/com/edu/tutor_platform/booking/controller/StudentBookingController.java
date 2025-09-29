@@ -121,50 +121,54 @@ public class StudentBookingController {
             return ResponseEntity.badRequest().build();
         }
     }
-    @GetMapping("/slots")
-    public ResponseEntity<List<SlotInstanceSummaryDTO>> getSlots(
-            @RequestParam Long tutorId,
-            @RequestParam(required = false) Boolean recurring,
-            @RequestParam(required = false) String weekday,
-            @RequestParam(required = false) Integer month,
-            @RequestParam(required = false) Integer year,
-            @RequestParam(required = false) LocalDate startDate,
-            @RequestParam(required = false) LocalDate endDate) {
-
-        if (Boolean.TRUE.equals(recurring)) {
-            if (weekday == null || month == null || year == null) {
-                return ResponseEntity.badRequest().build();
-            }
-            DayOfWeek dow;
-            try {
-                dow = DayOfWeek.valueOf(weekday.toUpperCase());
-            } catch (IllegalArgumentException ex) {
-                return ResponseEntity.badRequest().build();
-            }
-        List<SlotInstanceSummaryDTO> slots = slotManagementService.findMonthlyRecurringSlots(tutorId, dow, month, year);
-            return ResponseEntity.ok(slots);
+    @PostMapping("/slots")
+            public ResponseEntity<List<SlotInstanceDTO>> getAvailableSlots(@RequestBody SlotSearchRequestDTO request) {
+            return ResponseEntity.ok(slotManagementService.searchAvailableSlots(request));
         }
+    //@GetMapping("/slots") added by krishmal 2025/8/29
+    // public ResponseEntity<List<SlotInstanceSummaryDTO>> getSlots(
+    //         @RequestParam Long tutorId,
+    //         @RequestParam(required = false) Boolean recurring,
+    //         @RequestParam(required = false) String weekday,
+    //         @RequestParam(required = false) Integer month,
+    //         @RequestParam(required = false) Integer year,
+    //         @RequestParam(required = false) LocalDate startDate,
+    //         @RequestParam(required = false) LocalDate endDate) {
 
-        SlotSearchRequestDTO searchRequest = SlotSearchRequestDTO.builder()
-                .tutorId(tutorId)
-                .startDate(startDate != null ? startDate : LocalDate.now())
-                .endDate(endDate != null ? endDate : LocalDate.now().plusWeeks(2))
-                .build();
+    //     if (Boolean.TRUE.equals(recurring)) {
+    //         if (weekday == null || month == null || year == null) {
+    //             return ResponseEntity.badRequest().build();
+    //         }
+    //         DayOfWeek dow;
+    //         try {
+    //             dow = DayOfWeek.valueOf(weekday.toUpperCase());
+    //         } catch (IllegalArgumentException ex) {
+    //             return ResponseEntity.badRequest().build();
+    //         }
+    //     List<SlotInstanceSummaryDTO> slots = slotManagementService.findMonthlyRecurringSlots(tutorId, dow, month, year);
+    //         return ResponseEntity.ok(slots);
+    //     }
 
-    List<SlotInstanceSummaryDTO> slots = slotManagementService.searchAvailableSlots(searchRequest)
-        .stream()
-        .map(s -> SlotInstanceSummaryDTO.builder()
-            .slotId(s.getSlotId())
-            .availabilityId(s.getAvailabilityId())
-            .slotDate(s.getSlotDate())
-            .dayOfWeek(s.getDayOfWeek())
-            .startTime(s.getStartTime())
-            .endTime(s.getEndTime())
-            .status(s.getStatus())
-            .build())
-        .toList();
-    return ResponseEntity.ok(slots);
-    }
+    //     SlotSearchRequestDTO searchRequest = SlotSearchRequestDTO.builder()
+    //             .tutorId(tutorId)
+    //             .startDate(startDate != null ? startDate : LocalDate.now())
+    //             .endDate(endDate != null ? endDate : LocalDate.now().plusWeeks(2))
+    //             .build();
+
+    // List<SlotInstanceSummaryDTO> slots = slotManagementService.searchAvailableSlots(searchRequest)
+    //     .stream()
+    //     .map(s -> SlotInstanceSummaryDTO.builder()
+    //         .slotId(s.getSlotId())
+    //         .availabilityId(s.getAvailabilityId())
+    //         .slotDate(s.getSlotDate())
+    //         .dayOfWeek(s.getDayOfWeek())
+    //         .startTime(s.getStartTime())
+    //         .endTime(s.getEndTime())
+    //         .status(s.getStatus())
+    //         .build())
+    //     .toList();
+    // return ResponseEntity.ok(slots);
+    // }
    
     /**
      * Create a booking reservation (locks slot for limited time)

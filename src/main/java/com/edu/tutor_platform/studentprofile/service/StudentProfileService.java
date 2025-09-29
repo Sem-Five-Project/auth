@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.edu.tutor_platform.studentprofile.dto.StudentAcademicInfoDTO;
 
 import java.util.List;
 import java.util.Optional;
@@ -30,7 +31,18 @@ public class StudentProfileService {
 
         studentProfileRepository.save(studentProfile);
     }
-    
+    public StudentAcademicInfoDTO getAcademicInfo(Long studentId) {
+        var profile = studentProfileRepository.findById(studentId)
+                .orElseThrow(() -> new RuntimeException("Student profile not found"));
+
+        // Adjust field access (profile.getStream() if exists, else null)
+        return StudentAcademicInfoDTO.builder()
+                .educationLevel(profile.getEducationLevel() != null
+                        ? profile.getEducationLevel().toString()
+                        : null)
+                .stream(profile.getStream() != null ? profile.getStream().toString() : null)
+                .build();
+    }
     /**
      * Get student profile by student ID
      */

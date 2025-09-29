@@ -1,5 +1,6 @@
 package com.edu.tutor_platform.studentprofile.controller;
 
+import com.edu.tutor_platform.studentprofile.dto.StudentAcademicInfoDTO;
 import com.edu.tutor_platform.studentprofile.dto.StudentProfileResponse;
 import com.edu.tutor_platform.studentprofile.service.StudentProfileService;
 import lombok.RequiredArgsConstructor;
@@ -250,6 +251,15 @@ public class StudentProfileController {
         } catch (Exception e) {
             log.error("Error fetching student profile statistics: {}", e.getMessage());
             return ResponseEntity.internalServerError().build();
+        }
+    }
+    @GetMapping("/{studentId}/academic-info")
+    public ResponseEntity<StudentAcademicInfoDTO> getAcademicInfo(@PathVariable Long studentId) {
+        log.info("Fetching academic info for studenttt {}", studentId);
+        try {
+            return ResponseEntity.ok(studentProfileService.getAcademicInfo(studentId));
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
         }
     }
 }
