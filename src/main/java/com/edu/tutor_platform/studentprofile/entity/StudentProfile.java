@@ -36,6 +36,9 @@ public class StudentProfile {
     @Column(name = "education_level")
     private String educationLevel;
 
+    @Column(name = "stream")
+    private String stream;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "membership")
     private Membership membership;
