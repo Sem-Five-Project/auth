@@ -1,8 +1,6 @@
 package com.edu.tutor_platform.tutorprofile.service;
 
-import com.edu.tutor_platform.tutorprofile.dto.TutorDto;
-import com.edu.tutor_platform.tutorprofile.dto.TutorStatsDto;
-import com.edu.tutor_platform.tutorprofile.dto.TutorsDto;
+import com.edu.tutor_platform.tutorprofile.dto.*;
 import com.edu.tutor_platform.tutorprofile.entity.TutorProfile;
 import com.edu.tutor_platform.tutorprofile.entity.TutorProfileStatus;
 import com.edu.tutor_platform.tutorprofile.exception.TutorNotFoundException;
@@ -46,6 +44,21 @@ public class TutorProfileService {
 
         TutorDto updatedTutorDto = new TutorDto();
         updatedTutorDto.setTutorId(updatedTutor.getTutorId());
+        updatedTutorDto.setUserId(updatedTutor.getUser().getId());
+        updatedTutorDto.setFirstName(updatedTutor.getUser().getFirstName());
+        updatedTutorDto.setLastName(updatedTutor.getUser().getLastName());
+        updatedTutorDto.setEmail(updatedTutor.getUser().getEmail());
+        updatedTutorDto.setUserName(updatedTutor.getUser().getUsername());
+        updatedTutorDto.setProfilePictureUrl(updatedTutor.getUser().getProfileImage());
+        updatedTutorDto.setHourlyRate(updatedTutor.getHourlyRate());
+        updatedTutorDto.setVerified(updatedTutor.isVerified());
+        updatedTutorDto.setStatus(updatedTutor.getStatus());
+        updatedTutorDto.setAccountLocked(!updatedTutor.getUser().isAccountNonLocked());
+        updatedTutorDto.setAdminNotes(updatedTutor.getAdminNotes());
+        updatedTutorDto.setRating(updatedTutor.getRating());
+        updatedTutorDto.setExperienceInMonths(updatedTutor.getExperienceInMonths());
+        updatedTutorDto.setClassCompletionRate(updatedTutor.getClassCompletionRate());
+
         updatedTutorDto.setBio(updatedTutor.getBio());
 
 
@@ -75,7 +88,7 @@ public class TutorProfileService {
                 .orElseThrow(() -> new TutorNotFoundException("Tutor not found with id: " + l));
         TutorDto dto = new TutorDto();
         dto.setTutorId(tutor.getTutorId());
-        dto.setUserId(tutor.getUser().getId().toString());
+        dto.setUserId(tutor.getUser().getId());
         dto.setFirstName(tutor.getUser().getFirstName());
         dto.setLastName(tutor.getUser().getLastName());
         dto.setEmail(tutor.getUser().getEmail());
@@ -83,8 +96,9 @@ public class TutorProfileService {
         dto.setProfilePictureUrl(tutor.getUser().getProfileImage());
         dto.setBio(tutor.getBio());
         dto.setHourlyRate(tutor.getHourlyRate());
-        dto.setVerified(tutor.isVerified());
+        dto.setSubjects(tutor.getTutorSubjects());
         dto.setStatus(tutor.getStatus());
+        dto.setVerified(tutor.isVerified());
         dto.setAccountLocked(!tutor.getUser().isAccountNonLocked());
         dto.setAdminNotes(tutor.getAdminNotes());
         dto.setRating(tutor.getRating());
@@ -160,5 +174,40 @@ public class TutorProfileService {
         stats.setNewTutorsThisMonth(newTutorsLastMonth);
 
         return stats;
+    }
+
+    public List<TutorApprovalsDto> getPendingTutorApprovals() {
+        List<TutorProfile> pendingTutors = tutorProfileRepository.findByStatusIsNull();
+        return pendingTutors.stream().map(tutor -> {
+            TutorApprovalsDto dto = new TutorApprovalsDto();
+            dto.setTutorId(tutor.getTutorId());
+            dto.setUserName(tutor.getUser().getUsername());
+            List<SubjectInfoDto> subjectNames = tutor.getTutorSubjects().stream()
+                    .map(subject -> new SubjectInfoDto(subject.getSubject().getSubjectId(), subject.getSubject().getName(), subject.getVerificationDocs()) )
+                    .toList();
+            dto.setSubjects(subjectNames);
+            dto.setSubmissionDate(tutor.getUser().getUpdatedAt());
+            return dto;
+        }).toList();
+    }
+
+    public List<ReverificationsDto> getReverificationRequests() {
+        List<TutorProfile> reverifyTutors = tutorProfileRepository.findByTutorsHavePendingSubjects();
+        return reverifyTutors.stream().map(tutor -> {
+            ReverificationsDto dto = new ReverificationsDto();
+            dto.setTutorId(tutor.getTutorId());
+            dto.setUserName(tutor.getUser().getUsername());
+            List<SubjectInfoDto> subjects = tutor.getTutorSubjects().stream()
+                    .filter(subject -> "PENDING".equals(subject.getVerification()))
+                    .map(subject -> new SubjectInfoDto(
+                            subject.getSubject().getSubjectId(),
+                            subject.getSubject().getName(),
+                            subject.getVerificationDocs())
+                    )
+                    .toList();
+
+            dto.setSubjectInfo(subjects);
+            return dto;
+        }).toList();
     }
 }

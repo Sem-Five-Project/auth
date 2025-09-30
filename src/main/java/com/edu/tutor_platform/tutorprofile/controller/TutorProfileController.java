@@ -1,9 +1,6 @@
 package com.edu.tutor_platform.tutorprofile.controller;
 
-import com.edu.tutor_platform.tutorprofile.dto.TutorDto;
-import com.edu.tutor_platform.tutorprofile.dto.TutorStatsDto;
-import com.edu.tutor_platform.tutorprofile.dto.TutorsDto;
-import com.edu.tutor_platform.tutorprofile.entity.TutorProfileStatus;
+import com.edu.tutor_platform.tutorprofile.dto.*;
 import com.edu.tutor_platform.tutorprofile.service.TutorProfileService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -70,7 +67,7 @@ public class TutorProfileController {
 
 
     @PutMapping("/{id}/admin")
-    public ResponseEntity<TutorDto> AdminUpdateTutor(@PathVariable String id, @RequestBody TutorDto tutorDto) {
+    public ResponseEntity<TutorDto> adminUpdateTutor(@PathVariable String id, @RequestBody TutorDto tutorDto) {
         TutorDto tutor = tutorProfileService.adminUpdateTutorProfile(id, tutorDto);
         return new ResponseEntity<>(tutor, HttpStatus.OK);
     }
@@ -80,6 +77,20 @@ public class TutorProfileController {
     public ResponseEntity<Void> deleteTutor(@PathVariable String id) {
         tutorProfileService.deleteTutorProfile(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/pending-approvals")
+    public ResponseEntity<List<TutorApprovalsDto>> getPendingTutorApprovals() {
+        List<TutorApprovalsDto> pendingApprovals = tutorProfileService.getPendingTutorApprovals();
+        return ResponseEntity.ok(pendingApprovals);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/reverification-requests")
+    public ResponseEntity<List<ReverificationsDto>> getReverificationRequests() {
+        List<ReverificationsDto> requests = tutorProfileService.getReverificationRequests();
+        return ResponseEntity.ok(requests);
     }
 
 

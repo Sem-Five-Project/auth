@@ -33,9 +33,9 @@ public class Session {
     @Column(name = "end_time")
     private LocalDateTime endTime;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private SessionStatus status;
+
+    @Column(name = "status")
+    private String status = "SCHEDULED";
 
     @Column(name = "link_for_meeting")
     private String linkForMeeting;

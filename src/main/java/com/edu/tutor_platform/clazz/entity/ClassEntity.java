@@ -2,6 +2,7 @@ package com.edu.tutor_platform.clazz.entity;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 
 import jakarta.persistence.*;
 
@@ -36,6 +37,10 @@ public class ClassEntity {
 
     @Column(name = "date", nullable = false)
     private LocalDate date;
+
+    @OneToMany(mappedBy = "classEntity")
+    private List<Participants> participants;
+
 
     // Getters and Setters
     public Long getClassId() {

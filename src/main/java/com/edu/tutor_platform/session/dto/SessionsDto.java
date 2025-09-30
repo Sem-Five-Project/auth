@@ -6,25 +6,19 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.List;
+import java.time.LocalTime;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class SessionDto {
+public class SessionsDto {
     private Long sessionId;
     private String title;
     private Long tutorId;
-    private Long subjectId;
-    private List<Long> studentIds;
-    private LocalDateTime createdAt;
-    private LocalDateTime startTime;
-    private LocalDateTime endTime;
     private Long classId;
+    private LocalDateTime startTime;
+    private LocalTime duration;
     private String status;
-    private String moderatorLink;
-    private String participantLink;
-    private boolean notificationSent;
 
 }

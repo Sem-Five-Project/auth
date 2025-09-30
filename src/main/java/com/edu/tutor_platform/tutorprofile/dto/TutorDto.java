@@ -18,7 +18,7 @@ import java.util.List;
 @Builder
 public class TutorDto {
     private Long tutorId;
-    private String userId;
+    private Long userId;
     private String firstName;
     private String lastName;
     private String email;
