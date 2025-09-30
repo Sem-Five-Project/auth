@@ -77,4 +77,9 @@ public interface TutorProfileRepository extends JpaRepository<TutorProfile, Long
             @Param("verified") Boolean verified,
             Pageable pageable);
 
+    List<TutorProfile> findByStatusIsNull();
+
+    @Query("SELECT tp FROM TutorProfile tp JOIN tp.tutorSubjects tus WHERE tus.verification = 'PENDING' AND tp.status = 'ACTIVE' AND tp.verified = true")
+    List<TutorProfile> findByTutorsHavePendingSubjects();
+
 }
