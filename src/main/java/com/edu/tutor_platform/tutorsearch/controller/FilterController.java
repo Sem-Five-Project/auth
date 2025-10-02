@@ -2,8 +2,8 @@ package com.edu.tutor_platform.tutorsearch.controller;
 
 import com.edu.tutor_platform.tutorsearch.dto.SubjectDropdownRequestDTO;
 import com.edu.tutor_platform.tutorsearch.dto.SubjectDropdownResponseDTO;
-import com.edu.tutor_platform.tutorsearch.enums.EDUCATIONAL_LEVEL;
-import com.edu.tutor_platform.tutorsearch.enums.STREAM_TYPE;
+import com.edu.tutor_platform.tutorsearch.filter.enums.EDUCATION_LEVEL;
+import com.edu.tutor_platform.tutorsearch.filter.enums.STREAM_TYPE;
 import com.edu.tutor_platform.tutorsearch.service.FilterService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -28,7 +28,7 @@ public class FilterController {
             @RequestBody SubjectDropdownRequestDTO requestDTO) {
 
         // Normalize nulls (service can interpret null = ALL)
-        EDUCATIONAL_LEVEL level = requestDTO != null ? requestDTO.getEducationLevel() : null;
+        EDUCATION_LEVEL level = requestDTO != null ? requestDTO.getEducationLevel() : null;
         STREAM_TYPE stream = requestDTO != null ? requestDTO.getStream() : null;
 
         List<SubjectDropdownResponseDTO> subjects = filterService.getSubjects(

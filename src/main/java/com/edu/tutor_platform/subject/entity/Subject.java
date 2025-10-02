@@ -2,8 +2,8 @@ package com.edu.tutor_platform.subject.entity;
 
 import org.hibernate.annotations.JdbcType;
 
-import com.edu.tutor_platform.tutorsearch.enums.EDUCATIONAL_LEVEL;
-import com.edu.tutor_platform.tutorsearch.enums.STREAM_TYPE;
+import com.edu.tutor_platform.tutorsearch.filter.enums.EDUCATION_LEVEL;
+import com.edu.tutor_platform.tutorsearch.filter.enums.STREAM_TYPE;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -36,7 +36,7 @@ public class Subject {
     @Enumerated(EnumType.STRING)
     @JdbcType(PostgreSQLEnumJdbcType.class)
     @Column(name = "education_level", nullable = false, columnDefinition = "education_level")
-    private EDUCATIONAL_LEVEL educationLevel;
+    private EDUCATION_LEVEL educationLevel;
 
     @Enumerated(EnumType.STRING)
     @JdbcType(PostgreSQLEnumJdbcType.class)
