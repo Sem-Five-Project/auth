@@ -37,7 +37,7 @@ public class PaymentRequestDTO {
     private String orderId;
     private double amount;
     private String currency = "LKR";
-    private String paymentMethod; // e.g., PAYHERE
+    private String paymentMethod; 
 
     // Existing fields used across services
     private Long classId;

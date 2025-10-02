@@ -1,4 +1,4 @@
-package com.edu.tutor_platform.tutorsearch.enums;
+package com.edu.tutor_platform.tutorsearch.filter.enums;
 
 public enum STREAM_TYPE {
     TECHNOLOGY,

@@ -1,15 +1,18 @@
 package com.edu.tutor_platform.tutorsearch.filter.dto;
+import com.edu.tutor_platform.tutorsearch.filter.enums.EDUCATION_LEVEL;
+import com.edu.tutor_platform.tutorsearch.filter.enums.STREAM_TYPE;
+import lombok.ToString;
 
 import lombok.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
-
 @Getter @Setter @Builder
 @NoArgsConstructor @AllArgsConstructor
+@ToString
 public class TutorFilterRequestDTO {
-    private String educationLevel;      // e.g. "undergraduate" (frontend) → map to DB "UNDERGRAD"
-    private String stream;              // optional (if later needed)
+    private EDUCATION_LEVEL educationLevel;      // e.g. "undergraduate" (frontend) → map to DB "UNDERGRAD"
+    private STREAM_TYPE stream;              // optional (if later needed)
     private List<String> subjects;      // ["Mathematics", ...]
     private String classType;           // "ONE_TIME" | "MONTHLY"
     private Double rating;              // min rating

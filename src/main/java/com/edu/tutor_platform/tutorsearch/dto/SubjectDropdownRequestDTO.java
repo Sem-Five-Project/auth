@@ -1,7 +1,7 @@
 package com.edu.tutor_platform.tutorsearch.dto;
 
-import com.edu.tutor_platform.tutorsearch.enums.EDUCATIONAL_LEVEL;
-import com.edu.tutor_platform.tutorsearch.enums.STREAM_TYPE;
+import com.edu.tutor_platform.tutorsearch.filter.enums.EDUCATION_LEVEL;
+import com.edu.tutor_platform.tutorsearch.filter.enums.STREAM_TYPE;
 import lombok.*;
 
 @Builder
@@ -9,7 +9,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SubjectDropdownRequestDTO {
-    private EDUCATIONAL_LEVEL educationLevel; // nullable
+    private EDUCATION_LEVEL educationLevel; // nullable
     private STREAM_TYPE stream;             // nullable
 
 }

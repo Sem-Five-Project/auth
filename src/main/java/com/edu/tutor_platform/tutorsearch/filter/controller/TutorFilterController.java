@@ -18,6 +18,7 @@ public class TutorFilterController {
 
     @PostMapping
     public ResponseEntity<List<TutorFilterResultDTO>> filter(@RequestBody TutorFilterRequestDTO request) {
+        System.out.println("Received filter request: " + request);
         return ResponseEntity.ok(tutorFilterService.search(request));
     }
 }
