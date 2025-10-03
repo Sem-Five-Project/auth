@@ -1,6 +1,8 @@
 package com.edu.tutor_platform.studentprofile.dto;
 
 import com.edu.tutor_platform.studentprofile.enums.EducationalLevel;
+import com.edu.tutor_platform.studentprofile.enums.StudentProfileStatus;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,7 +18,7 @@ public class StudentProfileResponse {
     private Long studentId;
     private Long userId;
     private String adminNotes;
-    private Short status;
+    private StudentProfileStatus status;
     private EducationalLevel educationalLevel;
     private String educationLevel;
     private String membership;

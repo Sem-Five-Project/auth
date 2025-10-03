@@ -1,6 +1,10 @@
 package com.edu.tutor_platform.studentprofile.entity;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import com.edu.tutor_platform.studentprofile.enums.EducationalLevel;
+import com.edu.tutor_platform.studentprofile.enums.StudentProfileStatus;
 import com.edu.tutor_platform.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -25,13 +29,16 @@ public class StudentProfile {
     @Column(name = "admin_notes")
     private String adminNotes;
 
-    @Builder.Default
-    @Column(name = "status", nullable = false)
-    private Short status = 0;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
-    @Column(name = "educational_level")
-    private EducationalLevel educationalLevel;
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)               // keeps PostgreSQL enum (student_profile_status)
+    @Column(name = "status", columnDefinition = "student_profile_status")
+    private StudentProfileStatus status = StudentProfileStatus.ACTIVE;
+
+    // @Enumerated(EnumType.STRING)
+    // @Column(name = "educational_level")
+    // private EducationalLevel educationalLevel;
 
     @Column(name = "education_level")
     private String educationLevel;
@@ -43,4 +50,7 @@ public class StudentProfile {
     @Column(name = "membership")
     private Membership membership;
 }
+
+
+
 
