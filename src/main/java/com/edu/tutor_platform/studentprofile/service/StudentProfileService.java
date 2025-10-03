@@ -2,6 +2,7 @@ package com.edu.tutor_platform.studentprofile.service;
 
 import com.edu.tutor_platform.studentprofile.repository.StudentProfileRepository;
 import com.edu.tutor_platform.studentprofile.entity.StudentProfile;
+import com.edu.tutor_platform.studentprofile.enums.StudentProfileStatus;
 import com.edu.tutor_platform.studentprofile.dto.StudentProfileResponse;
 import com.edu.tutor_platform.studentprofile.entity.Membership;
 import com.edu.tutor_platform.user.entity.User;
@@ -106,7 +107,8 @@ public class StudentProfileService {
     public List<StudentProfileResponse> getActiveStudentProfiles() {
         log.info("Fetching active student profiles");
         
-        List<StudentProfile> profiles = studentProfileRepository.findByStatus((short) 1);
+        List<StudentProfile> profiles = studentProfileRepository.findByStatus(StudentProfileStatus.ACTIVE); 
+
         return profiles.stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
@@ -130,9 +132,9 @@ public class StudentProfileService {
         if (updateRequest.getEducationLevel() != null) {
             profile.setEducationLevel(updateRequest.getEducationLevel());
         }
-        if (updateRequest.getEducationalLevel() != null) {
-            profile.setEducationalLevel(updateRequest.getEducationalLevel());
-        }
+        // if (updateRequest.getEducationalLevel() != null) {
+        //     profile.setEducationalLevel(updateRequest.getEducationalLevel());
+        // }
         if (updateRequest.getMembership() != null) {
             profile.setMembership(Membership.valueOf(updateRequest.getMembership()));
         }
@@ -154,7 +156,7 @@ public class StudentProfileService {
                 .userId(user.getId())
                 .adminNotes(profile.getAdminNotes())
                 .status(profile.getStatus())
-                .educationalLevel(profile.getEducationalLevel())
+                // .educationalLevel(profile.getEducationalLevel())
                 .educationLevel(profile.getEducationLevel())
                 .membership(profile.getMembership() != null ? profile.getMembership().toString() : null)
                 .firstName(user.getFirstName())
@@ -163,8 +165,9 @@ public class StudentProfileService {
                 .username(user.getUsername())
                 .profileImage(user.getProfileImage())
                 .fullName(user.getFirstName() + " " + user.getLastName())
-                .statusDescription(getStatusDescription(profile.getStatus()))
-                .isActive(profile.getStatus() != null && profile.getStatus() == 1)
+                //below old
+                //.statusDescription(getStatusDescription(profile.getStatus()))
+                .isActive(profile.getStatus() != null && profile.getStatus() == StudentProfileStatus.ACTIVE)
                 .build();
     }
     
