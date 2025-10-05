@@ -24,6 +24,7 @@ public class StudentProfile {
     @Column(name = "education_level")
     private String educationLevel;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status")
     private StudentProfileStatus status = StudentProfileStatus.ACTIVE;
 

@@ -1,5 +1,7 @@
 package com.edu.tutor_platform.subject.entity;
 
+import com.edu.tutor_platform.subject.enums.EducationLevel;
+import com.edu.tutor_platform.subject.enums.HighSchoolStreamType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -18,4 +20,12 @@ public class Subject {
 
     @Column(name = "name", nullable = false, unique = true, length = 255)
     private String name;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "education_level")
+    private EducationLevel educationLevel;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "stream")
+    private HighSchoolStreamType stream;
 }
