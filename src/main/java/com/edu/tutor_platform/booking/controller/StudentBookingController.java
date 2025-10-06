@@ -173,6 +173,38 @@ System.out.println("Recurring only filter1: " + recurring);
                     "message", e.getMessage()));
         }
     }
+
+    /**
+     * Check if a class exists for (tutor, language, subject, student, classType)
+     * Example: /student/bookings/check-class-exist?tutorId=1&languageId=2&subjectId=3&studentId=4&classType=RECURRING
+     */
+    @GetMapping("/check-class-exist")
+    public ResponseEntity<?> checkClassExist(
+            @RequestParam Long tutorId,
+            @RequestParam Long languageId,
+            @RequestParam Long subjectId,
+            @RequestParam Long studentId,
+            @RequestParam String classType) {
+        try {
+            var req = com.edu.tutor_platform.booking.dto.CheckClassExistRequestDTO.builder()
+                    .tutorId(tutorId)
+                    .languageId(languageId)
+                    .subjectId(subjectId)
+                    .studentId(studentId)
+                    .classType(classType)
+                    .build();
+            var resp = slotManagementService.checkClassExist(req);
+            return ResponseEntity.ok(resp);
+        } catch (IllegalArgumentException iae) {
+            return ResponseEntity.badRequest().body(java.util.Map.of(
+                    "error", "BAD_REQUEST",
+                    "message", iae.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(java.util.Map.of(
+                    "error", "INTERNAL_SERVER_ERROR",
+                    "message", e.getMessage()));
+        }
+    }
     // @GetMapping("/slots") added by krishmal 2025/8/29
     // public ResponseEntity<List<SlotInstanceSummaryDTO>> getSlots(
     //         @RequestParam Long tutorId,

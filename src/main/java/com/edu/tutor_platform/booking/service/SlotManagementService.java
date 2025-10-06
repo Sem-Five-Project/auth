@@ -27,6 +27,8 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import com.edu.tutor_platform.booking.dto.CheckClassExistRequestDTO;
+import com.edu.tutor_platform.booking.dto.CheckClassExistResponseDTO;
 import java.util.Set;
 import java.util.stream.Collectors;
 @Service
@@ -548,6 +550,56 @@ public class SlotManagementService {
                 .isRecurring(slot.getTutorAvailability().getRecurring())
                 .rating(tutorProfile.getRating() != null ? tutorProfile.getRating().doubleValue() : null)
                 .build();
+    }
+
+    /**
+     * Check if a class already exists for the given tutor, language, subject, student and class type.
+     * Delegates to PostgreSQL function check_class_exist.
+     */
+    public CheckClassExistResponseDTO checkClassExist(CheckClassExistRequestDTO req) {
+        if (req.getTutorId() == null || req.getLanguageId() == null || req.getSubjectId() == null ||
+                req.getStudentId() == null || req.getClassType() == null) {
+            throw new IllegalArgumentException("All parameters are required");
+        }
+        String json = slotInstanceRepository.checkClassExist(
+                req.getTutorId(),
+                req.getLanguageId(),
+                req.getSubjectId(),
+                req.getStudentId(),
+                req.getClassType()
+        );
+        log.debug("check_class_exist raw JSON: {}", json);
+        if (json == null || json.isBlank()) {
+            return CheckClassExistResponseDTO.builder().exists(false).build();
+        }
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(json);
+            boolean exists = root.has("exists") && root.get("exists").asBoolean();
+            if (!exists) {
+                return CheckClassExistResponseDTO.builder().exists(false).build();
+            }
+            Long classId = root.hasNonNull("class_id") ? root.get("class_id").asLong() : null;
+            List<CheckClassExistResponseDTO.SlotInfo> slots = new ArrayList<>();
+            JsonNode slotsNode = root.get("slots");
+            if (slotsNode != null && slotsNode.isArray()) {
+                for (JsonNode s : slotsNode) {
+                    slots.add(CheckClassExistResponseDTO.SlotInfo.builder()
+                            .weekday(s.hasNonNull("weekday") ? s.get("weekday").asText() : null)
+                            .startTime(s.hasNonNull("start_time") ? LocalTime.parse(s.get("start_time").asText()) : null)
+                            .endTime(s.hasNonNull("end_time") ? LocalTime.parse(s.get("end_time").asText()) : null)
+                            .build());
+                }
+            }
+            return CheckClassExistResponseDTO.builder()
+                    .exists(true)
+                    .classId(classId)
+                    .slots(slots)
+                    .build();
+        } catch (Exception e) {
+            log.error("Failed to parse check_class_exist JSON", e);
+            return CheckClassExistResponseDTO.builder().exists(false).build();
+        }
     }
 }
 
