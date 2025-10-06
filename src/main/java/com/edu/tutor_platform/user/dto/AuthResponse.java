@@ -13,6 +13,8 @@
 // }
 package com.edu.tutor_platform.user.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 public class AuthResponse {
     
     private String accessToken;
@@ -50,6 +52,7 @@ public class AuthResponse {
         this.user = user;
     }
     
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class UserInfo {
         private Long id;
         private String username;
@@ -58,6 +61,9 @@ public class AuthResponse {
         private String email;
         private String role;
         private String profileImage;  // NEW
+        // Added optional role-specific identifiers
+        private Long studentId; // present if role = STUDENT
+        private Long tutorId;   // present if role = TUTOR
 
         
         public UserInfo() {}
@@ -130,6 +136,19 @@ public class AuthResponse {
         
         public void setRole(String role) {
             this.role = role;
+        }
+
+        public Long getStudentId() {
+            return studentId;
+        }
+        public void setStudentId(Long studentId) {
+            this.studentId = studentId;
+        }
+        public Long getTutorId() {
+            return tutorId;
+        }
+        public void setTutorId(Long tutorId) {
+            this.tutorId = tutorId;
         }
     }
 }

@@ -1,6 +1,8 @@
 package com.edu.tutor_platform.studentprofile.controller;
 
 import com.edu.tutor_platform.studentprofile.dto.StudentAcademicInfoDTO;
+import com.edu.tutor_platform.studentprofile.dto.StudentProfileInfoRespondDTO;
+import com.edu.tutor_platform.studentprofile.dto.StudentProfilePaymentRespondDTO;
 import com.edu.tutor_platform.studentprofile.dto.StudentProfileResponse;
 import com.edu.tutor_platform.studentprofile.service.StudentProfileService;
 import lombok.RequiredArgsConstructor;
@@ -255,11 +257,47 @@ public class StudentProfileController {
     }
     @GetMapping("/{studentId}/academic-info")
     public ResponseEntity<StudentAcademicInfoDTO> getAcademicInfo(@PathVariable Long studentId) {
-        log.info("Fetching academic info for studenttt {}", studentId);
         try {
             return ResponseEntity.ok(studentProfileService.getAcademicInfo(studentId));
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
     }
+    @GetMapping("/{studentId}/profile-info")
+    public ResponseEntity<StudentProfileInfoRespondDTO> getProfileInfo(@PathVariable Long studentId) {
+        try {
+            return ResponseEntity.ok(studentProfileService.getProfileInfo(studentId));
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+// ...existing code...
+    @GetMapping("/{studentId}/profile-payment")
+    public ResponseEntity<?> getProfilePayment(
+            @PathVariable Long studentId,
+            @RequestParam(name = "period", defaultValue = "all") String period) {
+        log.info("Fetching payment history for studentId={}, period={}", studentId, period);
+        try {
+            var result = studentProfileService.getProfilePayment(studentId, period.toLowerCase());
+            log.info("Payment history rows returned: {}", result.size());
+            return ResponseEntity.ok(result);
+        } catch (org.springframework.web.server.ResponseStatusException rse) {
+            // Preserve NOT_FOUND vs other statuses
+            log.warn("Payment history lookup failed for studentId {}: {}", studentId, rse.getReason());
+            return ResponseEntity.status(rse.getStatusCode())
+                    .body(Map.of(
+                            "error", "NOT_FOUND",
+                            "message", rse.getReason(),
+                            "studentId", studentId
+                    ));
+        } catch (RuntimeException e) {
+            log.error("Unexpected error fetching payment history for {}: {}", studentId, e.getMessage());
+            return ResponseEntity.internalServerError()
+                    .body(Map.of(
+                            "error", "INTERNAL_ERROR",
+                            "message", e.getMessage()
+                    ));
+        }
+    }
+// ...existing code...
 }

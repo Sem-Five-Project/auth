@@ -3,11 +3,12 @@ package com.edu.tutor_platform.studentprofile.entity;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import com.edu.tutor_platform.studentprofile.enums.EducationalLevel;
 import com.edu.tutor_platform.studentprofile.enums.StudentProfileStatus;
 import com.edu.tutor_platform.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
+
+
 
 @Entity
 @Table(name = "student_profile")
@@ -46,11 +47,13 @@ public class StudentProfile {
     @Column(name = "stream")
     private String stream;
 
+    @Column(name = "class_count")
+    private Integer classCount;
+
+    @Column(name = "session_count")
+    private Integer sessionCount;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "membership")
     private Membership membership;
 }
-
-
-
-

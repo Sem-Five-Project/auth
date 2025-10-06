@@ -1,10 +1,11 @@
 package com.edu.tutor_platform.tutorsearch.filter.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.*;
-
-import java.math.BigDecimal;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
 @Setter
@@ -12,9 +13,7 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class SubjectWithRateDTO {
+public class LanguageWithIdDTO {
     private String name;
-    private Number subjectId;
-    @JsonProperty("hourly_rate")
-    private BigDecimal hourlyRate;
+    private Number languageId;
 }
