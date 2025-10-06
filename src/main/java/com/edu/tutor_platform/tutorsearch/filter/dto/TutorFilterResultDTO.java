@@ -14,5 +14,5 @@ public class TutorFilterResultDTO {
     private Double rating;              // nullable
     private Integer experienceMonths;   // nullable
     private List<SubjectWithRateDTO> subjects;
-    private List<String> languages;
+    private List<LanguageWithIdDTO> languages;
 }

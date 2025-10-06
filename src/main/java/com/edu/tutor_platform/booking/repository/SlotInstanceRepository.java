@@ -110,4 +110,22 @@ public interface SlotInstanceRepository extends JpaRepository<SlotInstance, Long
        @Lock(LockModeType.PESSIMISTIC_WRITE)
        @Query("select si from SlotInstance si where si.slotId in :ids")
        List<SlotInstance> findAllForUpdateByIds(@Param("ids") List<Long> ids);
+@Query(value = """
+        SELECT get_tutor_slots(:tutorId, :weekday, :month, :year)::text AS slots
+        """, nativeQuery = true)
+    String findTutorWeeklySlotsJson(@Param("tutorId") Long tutorId,
+                                    @Param("weekday") String weekday,
+                                    @Param("month") Integer month,
+                                    @Param("year") Integer year);
+
+    // Fetch next month slots for multiple availability ids.
+    // Note: Passing a collection parameter to a PostgreSQL function expecting BIGINT[].
+    // Spring will expand the collection; we explicitly cast to BIGINT[] to be safe.
+@Query(value = """
+        SELECT get_next_month_slots(CAST(:availabilityIdsArray AS BIGINT[]), :year, :month)::text AS slots
+        """, nativeQuery = true)
+    String findNextMonthSlotsJson(
+            @Param("availabilityIdsArray") String availabilityIdsArray,
+            @Param("year") Integer year,
+            @Param("month") Integer month);
 }

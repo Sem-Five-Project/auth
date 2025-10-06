@@ -10,7 +10,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import com.edu.tutor_platform.studentprofile.dto.StudentAcademicInfoDTO;
+import com.edu.tutor_platform.studentprofile.dto.StudentProfileInfoRespondDTO;
+import com.edu.tutor_platform.studentprofile.dto.StudentProfilePaymentRespondDTO;
 
 import java.util.List;
 import java.util.Optional;
@@ -28,6 +33,7 @@ public class StudentProfileService {
         StudentProfile studentProfile = StudentProfile.builder()
                 .user(user)
                 .membership(null)
+                .status(StudentProfileStatus.ACTIVE) // <--- default status set here
                 .build();
 
         studentProfileRepository.save(studentProfile);
@@ -44,6 +50,30 @@ public class StudentProfileService {
                 .stream(profile.getStream() != null ? profile.getStream().toString() : null)
                 .build();
     }
+    public StudentProfileInfoRespondDTO getProfileInfo(Long studentId) {
+        var profile = studentProfileRepository.findById(studentId)
+                .orElseThrow(() -> new RuntimeException("Student profile not found"));
+
+        // Adjust field access (profile.getStream() if exists, else null)
+        return StudentProfileInfoRespondDTO.builder()
+                .educationLevel(profile.getEducationLevel() != null
+                        ? profile.getEducationLevel().toString()
+                        : null)
+                .stream(profile.getStream() != null ? profile.getStream().toString() : null)
+                .classCount(profile.getClassCount() != null ? profile.getClassCount(): 0)
+                .sessionCount(profile.getSessionCount() != null ? profile.getSessionCount() : 0)
+                .build();
+    }
+
+public List<StudentProfilePaymentRespondDTO> getProfilePayment(Long studentId, String period) {
+    if (!studentProfileRepository.existsById(studentId)) {
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+            "Student profile not found with ID: " + studentId);
+    }
+    System.out.println("Period received: " + period+ " for student ID: " + studentId);
+    String validatedPeriod = "all".equalsIgnoreCase(period) ? "all" : (period != null ? period.toLowerCase() : "all");
+    return studentProfileRepository.findPaymentHistoryByStudentId(studentId, validatedPeriod);
+}
     /**
      * Get student profile by student ID
      */
@@ -186,4 +216,3 @@ public class StudentProfileService {
         };
     }
 }
-

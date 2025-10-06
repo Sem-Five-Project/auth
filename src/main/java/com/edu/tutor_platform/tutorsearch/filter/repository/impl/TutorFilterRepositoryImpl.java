@@ -56,6 +56,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.apache.commons.codec.language.bm.Lang;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -72,8 +74,9 @@ public class TutorFilterRepositoryImpl implements TutorFilterRepository {
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
 
-    private static final TypeReference<List<SubjectWithRateDTO>> SUBJECT_LIST_TYPE =
-            new TypeReference<>() {};
+    private static final TypeReference<List<SubjectWithRateDTO>> SUBJECT_LIST_TYPE =new TypeReference<>() {};
+    private static final TypeReference<List<LanguageWithIdDTO>> LANGUAGE_LIST_TYPE =new TypeReference<>() {};
+
 
     @Override
     public List<TutorFilterResultDTO> searchByFilters(TutorFilterRequestDTO request) {
@@ -87,7 +90,7 @@ public class TutorFilterRepositoryImpl implements TutorFilterRepository {
             return jdbcTemplate.query(sql, params, (rs, rowNum) -> {
                 if (rowNum == 0) logColumns(rs);
                 List<SubjectWithRateDTO> subjects = parseSubjects(rs);
-                List<String> languages = parseLanguages(rs);
+                List<LanguageWithIdDTO> languages = parseLanguages(rs);
 
                 return TutorFilterResultDTO.builder()
                         .tutorId(getLong(rs, "tutor_id"))
@@ -126,15 +129,12 @@ public class TutorFilterRepositoryImpl implements TutorFilterRepository {
         }
     }
 
-    private List<String> parseLanguages(ResultSet rs) {
+    private List<LanguageWithIdDTO> parseLanguages(ResultSet rs) {
         try {
-            Array arr = rs.getArray("languages");
-            if (arr == null) return List.of();
-            String[] vals = (String[]) arr.getArray();
-            return Arrays.stream(vals)
-                    .filter(Objects::nonNull)
-                    .distinct()
-                    .toList();
+            String json = rs.getString("languages");
+            if(json==null) return List.of();
+            return objectMapper.readValue(json, LANGUAGE_LIST_TYPE);
+
         } catch (Exception e) {
             log.warn("Failed parsing languages array", e);
             return List.of();

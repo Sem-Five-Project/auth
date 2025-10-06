@@ -28,12 +28,8 @@ public class SlotSearchRequestDTO {
     private Double maxHourlyRate;
     private Double minRating;
     private Boolean recurringOnly;
-    
-    // Pagination
     private Integer page = 0;
     private Integer size = 20;
-    
-    // Sorting
-    private String sortBy = "slotDate"; // slotDate, startTime, hourlyRate, rating
-    private String sortDirection = "ASC"; // ASC, DESC
+    private String sortBy = "slotDate"; 
+    private String sortDirection = "ASC"; 
 }

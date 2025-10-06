@@ -1,13 +1,14 @@
 package com.edu.tutor_platform.booking.controller;
 
+import com.edu.tutor_platform.booking.dto.MonthlyRecurringSlotsRespondDTO;
+import com.edu.tutor_platform.booking.dto.NextMonthSlotRequestDTO;
+import com.edu.tutor_platform.booking.dto.NextMonthSlotRespondDTO;
 import com.edu.tutor_platform.booking.dto.SlotInstanceDTO;
 import com.edu.tutor_platform.booking.dto.SlotSearchRequestDTO;
 import com.edu.tutor_platform.booking.service.SlotManagementService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.edu.tutor_platform.booking.dto.SlotInstanceSummaryDTO;
-import com.edu.tutor_platform.booking.enums.DayOfWeek;
 
 
 
@@ -61,45 +62,45 @@ public class StudentBookingController {
      * Get available slots for a specific tutor
      */
 
-//     @GetMapping("/slots/tutor/{tutorId}")
-//     public ResponseEntity<List<SlotInstanceDTO>> getTutorSlots(
-//             @PathVariable Long tutorId,
-//             @RequestParam(required = false) String date,
-//             @RequestParam(required = false) Boolean recurring) {
+    @GetMapping("/slots/tutor/{tutorId}")
+    public ResponseEntity<List<SlotInstanceDTO>> getTutorSlots(
+            @PathVariable Long tutorId,
+            @RequestParam(required = false) String date,
+            @RequestParam(required = false) Boolean recurring) {
 
-//         LocalDate targetDate = null;
-//         if (date != null && !date.isBlank()) {
-//             try {
-//                 targetDate = LocalDate.parse(date);
-//             } catch (Exception e) {
-//                 return ResponseEntity.badRequest().build();
-//             }
-//         }
-// System.out.println("Recurring only filter1: " + recurring);
+        LocalDate targetDate = null;
+        if (date != null && !date.isBlank()) {
+            try {
+                targetDate = LocalDate.parse(date);
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().build();
+            }
+        }
+System.out.println("Recurring only filter1: " + recurring);
 
-//         SlotSearchRequestDTO.SlotSearchRequestDTOBuilder builder = SlotSearchRequestDTO.builder()
-//                 .tutorId(tutorId);
+        SlotSearchRequestDTO.SlotSearchRequestDTOBuilder builder = SlotSearchRequestDTO.builder()
+                .tutorId(tutorId);
 
-//         if (targetDate != null) {
-//             builder.specificDate(targetDate);
-//         } else {
-//             builder.startDate(LocalDate.now())
-//                    .endDate(LocalDate.now().plusWeeks(2));
-//         }
-//         if (recurring != null) {
-//             builder.recurringOnly(recurring);
-//         }
+        if (targetDate != null) {
+            builder.specificDate(targetDate);
+        } else {
+            builder.startDate(LocalDate.now())
+                   .endDate(LocalDate.now().plusWeeks(2));
+        }
+        if (recurring != null) {
+            builder.recurringOnly(recurring);
+        }
 
-//         SlotSearchRequestDTO searchRequest = builder.build();
+        SlotSearchRequestDTO searchRequest = builder.build();
 
-//         List<SlotInstanceDTO> slots = slotManagementService.searchAvailableSlots(searchRequest);
-//         return ResponseEntity.ok(slots);
-//     }
+        List<SlotInstanceDTO> slots = slotManagementService.searchAvailableSlots(searchRequest);
+        return ResponseEntity.ok(slots);
+    }
 
     /**
      * Get available slots for a specific tutor on a specific date
      */
-    @GetMapping("/slots1")
+    @GetMapping("/slots")
     public ResponseEntity<List<SlotInstanceDTO>> getTutorSlotsForDate(
             @RequestParam Long tutorId,
             @RequestParam String date,
@@ -122,10 +123,57 @@ public class StudentBookingController {
         }
     }
     @PostMapping("/slots")
-            public ResponseEntity<List<SlotInstanceDTO>> getAvailableSlots(@RequestBody SlotSearchRequestDTO request) {
+    public ResponseEntity<List<SlotInstanceDTO>> getAvailableSlots(@RequestBody SlotSearchRequestDTO request) {
             return ResponseEntity.ok(slotManagementService.searchAvailableSlots(request));
+    }
+
+
+     @GetMapping("/slots/recurring")
+    public ResponseEntity<?> getTutorSlotsViaFunction(
+            @RequestParam Long tutorId,
+            @RequestParam String weekday,
+            @RequestParam(required = false) Integer month,
+            @RequestParam(required = false) Integer year) {
+        try {
+            List<MonthlyRecurringSlotsRespondDTO> list = slotManagementService.getRecurringSlots(tutorId, weekday, month, year);
+            return ResponseEntity.ok(list);
+        } catch (IllegalArgumentException iae) {
+            return ResponseEntity.badRequest().body(
+                    java.util.Map.of("error","BAD_REQUEST","message", iae.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(
+                    java.util.Map.of("error","INTERNAL_SERVER_ERROR","message", e.getMessage()));
         }
-    //@GetMapping("/slots") added by krishmal 2025/8/29
+    }
+
+    /**
+     * Get next month slots for a list of availability ids.
+     * Example: /student/bookings/slots/next-month?availabilityIds=1,2,3&year=2025&month=10
+     */
+    @GetMapping("/slots/next-month")
+    public ResponseEntity<?> getNextMonthSlots(
+            @RequestParam List<Long> availabilityIds,
+            @RequestParam Integer year,
+            @RequestParam Integer month) {
+        try {
+            NextMonthSlotRequestDTO request = NextMonthSlotRequestDTO.builder()
+                    .availabilityIds(availabilityIds)
+                    .year(year)
+                    .month(month)
+                    .build();
+            List<NextMonthSlotRespondDTO> result = slotManagementService.getNextMonthSlots(request);
+            return ResponseEntity.ok(result);
+        } catch (IllegalArgumentException iae) {
+            return ResponseEntity.badRequest().body(java.util.Map.of(
+                    "error", "BAD_REQUEST",
+                    "message", iae.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(java.util.Map.of(
+                    "error", "INTERNAL_SERVER_ERROR",
+                    "message", e.getMessage()));
+        }
+    }
+    // @GetMapping("/slots") added by krishmal 2025/8/29
     // public ResponseEntity<List<SlotInstanceSummaryDTO>> getSlots(
     //         @RequestParam Long tutorId,
     //         @RequestParam(required = false) Boolean recurring,
