@@ -128,4 +128,13 @@ public interface SlotInstanceRepository extends JpaRepository<SlotInstance, Long
             @Param("availabilityIdsArray") String availabilityIdsArray,
             @Param("year") Integer year,
             @Param("month") Integer month);
+
+    // Call Supabase/PostgreSQL function check_class_exist returning JSONB
+    @Query(value = "SELECT check_class_exist(:tutorId, :languageId, :subjectId, :studentId, :classType)::text", nativeQuery = true)
+    String checkClassExist(
+           @Param("tutorId") Long tutorId,
+           @Param("languageId") Long languageId,
+           @Param("subjectId") Long subjectId,
+           @Param("studentId") Long studentId,
+           @Param("classType") String classType);
 }
