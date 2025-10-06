@@ -32,76 +32,76 @@ public class BookingService {
     private final SlotInstanceRepository slotInstanceRepository;
     private final StudentProfileRepository studentProfileRepository;
     private final PaymentService paymentService;
-    private final BookingValidationService validationService;
+    //private final BookingValidationService validationService;
 
     private static final int BOOKING_LOCK_MINUTES = 15; // 15 minutes to complete payment
 
     /**
      * Create a booking reservation with time-limited lock
      */
-    @Transactional
-    public BookingDTO createBookingReservation(BookingRequestDTO request) {
-        log.info("Creating booking reservation for slot {} by student {}",
-                request.getSlotId(), request.getStudentId());
+    // @Transactional
+    // public BookingDTO createBookingReservation(BookingRequestDTO request) {
+    //     log.info("Creating booking reservation for slot {} by student {}",
+    //             request.getSlotId(), request.getStudentId());
 
-        // Validate booking request
-        validationService.validateBookingRequest(request);
+    //     // Validate booking request
+    //     validationService.validateBookingRequest(request);
 
-        // Get validated entities
-        StudentProfile student = studentProfileRepository.findById(request.getStudentId())
-                .orElseThrow(() -> new RuntimeException("Student not found"));
+    //     // Get validated entities
+    //     StudentProfile student = studentProfileRepository.findById(request.getStudentId())
+    //             .orElseThrow(() -> new RuntimeException("Student not found"));
 
-        SlotInstance slot = slotInstanceRepository.findById(request.getSlotId())
-                .orElseThrow(() -> new RuntimeException("Slot not found"));
+    //     SlotInstance slot = slotInstanceRepository.findById(request.getSlotId())
+    //             .orElseThrow(() -> new RuntimeException("Slot not found"));
 
-        // Create booking with lock
-        LocalDateTime lockUntil = LocalDateTime.now().plusMinutes(BOOKING_LOCK_MINUTES);
+    //     // Create booking with lock
+    //     LocalDateTime lockUntil = LocalDateTime.now().plusMinutes(BOOKING_LOCK_MINUTES);
         
-        Booking booking = Booking.builder()
-                .studentProfile(student)
-                .slotInstance(slot)
-                .lockedUntil(lockUntil)
-                .isConfirmed(false)
-                .build();
+    //     Booking booking = Booking.builder()
+    //             .studentProfile(student)
+    //             .slotInstance(slot)
+    //             .lockedUntil(lockUntil)
+    //             .isConfirmed(false)
+    //             .build();
 
-        booking = bookingRepository.save(booking);
+    //     booking = bookingRepository.save(booking);
 
-        // Update slot status to LOCKED
-        slot.setStatus(SlotStatus.LOCKED);
-        slotInstanceRepository.save(slot);
+    //     // Update slot status to LOCKED
+    //     slot.setStatus(SlotStatus.LOCKED);
+    //     slotInstanceRepository.save(slot);
 
-        log.info("Created booking reservation {} with lock until {}", 
-                booking.getBookingId(), lockUntil);
+    //     log.info("Created booking reservation {} with lock until {}", 
+    //             booking.getBookingId(), lockUntil);
 
-        return convertToDTO(booking);
-    }
+    //     return convertToDTO(booking);
+    // }
 
     /**
      * Confirm booking after successful payment
      */
-    @Transactional
-    public BookingDTO confirmBooking(Long bookingId, String paymentId) {
-        log.info("Confirming booking {} with payment {}", bookingId, paymentId);
+    // @Transactional
+    // public BookingDTO confirmBooking(Long bookingId, String paymentId) {
+    //     log.info("Confirming booking {} with payment {}", bookingId, paymentId);
 
-        // Validate booking confirmation
-        validationService.validateBookingConfirmation(bookingId);
+    //     // Validate booking confirmation
+    //     validationService.validateBookingConfirmation(bookingId);
 
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new RuntimeException("Booking not found"));
+    //     Booking booking = bookingRepository.findById(bookingId)
+    //             .orElseThrow(() -> new RuntimeException("Booking not found"));
 
-        // Update booking status
-        booking.setIsConfirmed(true);
-        booking = bookingRepository.save(booking);
+    //     // Update booking status
+    //     booking.setIsConfirmed(true);
+    //     booking = bookingRepository.save(booking);
 
-        // Update slot status to BOOKED
-        SlotInstance slot = booking.getSlotInstance();
-        slot.setStatus(SlotStatus.BOOKED);
-        slotInstanceRepository.save(slot);
+    //     // Update slot status to BOOKED
+    //     SlotInstance slot = booking.getSlotInstance();
+    //     slot.setStatus(SlotStatus.BOOKED);
+    //     slotInstanceRepository.save(slot);
 
-        log.info("Confirmed booking {} successfully", bookingId);
+    //     log.info("Confirmed booking {} successfully", bookingId);
 
-        return convertToDTO(booking);
-    }
+    //     return convertToDTO(booking);
+    // }
 
     /**
      * Cancel a booking reservation
@@ -131,81 +131,81 @@ public class BookingService {
     /**
      * Process payment for a booking
      */
-    @Transactional
-    public Map<String, Object> processBookingPayment(Long bookingId, BookingRequestDTO request) {
-        log.info("Processing payment for booking {}", bookingId);
+    // @Transactional
+    // public Map<String, Object> processBookingPayment(Long bookingId, BookingRequestDTO request) {
+    //     log.info("Processing payment for booking {}", bookingId);
 
-        // Validate payment processing
-        validationService.validatePaymentProcessing(bookingId);
+    //     // Validate payment processing
+    //     validationService.validatePaymentProcessing(bookingId);
 
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new RuntimeException("Booking not found"));
+    //     Booking booking = bookingRepository.findById(bookingId)
+    //             .orElseThrow(() -> new RuntimeException("Booking not found"));
 
-        SlotInstance slot = booking.getSlotInstance();
-        Double hourlyRate = slot.getTutorAvailability().getTutorProfile().getHourlyRate().doubleValue();
+    //     SlotInstance slot = booking.getSlotInstance();
+    //     Double hourlyRate = slot.getTutorAvailability().getTutorProfile().getHourlyRate().doubleValue();
 
-        // Calculate amount (assuming 1-hour slots for now)
-        double amount = hourlyRate;
+    //     // Calculate amount (assuming 1-hour slots for now)
+    //     double amount = hourlyRate;
 
-        // Create payment request
-        try {
-            // Create PaymentRequestDTO for the existing payment service
-            com.edu.tutor_platform.payment.dto.PaymentRequestDTO paymentRequest =
-                    new com.edu.tutor_platform.payment.dto.PaymentRequestDTO();
-            paymentRequest.setOrderId(String.valueOf(bookingId));
-            paymentRequest.setAmount(amount);
-            paymentRequest.setCurrency("LKR");
-            paymentRequest.setStudentId(booking.getStudentProfile().getStudentId());
-            paymentRequest.setTutorId(slot.getTutorAvailability().getTutorProfile().getTutorId());
-            paymentRequest.setClassId(bookingId); // Use booking ID as class ID
+    //     // Create payment request
+    //     try {
+    //         // Create PaymentRequestDTO for the existing payment service
+    //         com.edu.tutor_platform.payment.dto.PaymentRequestDTO paymentRequest =
+    //                 new com.edu.tutor_platform.payment.dto.PaymentRequestDTO();
+    //         paymentRequest.setOrderId(String.valueOf(bookingId));
+    //         paymentRequest.setAmount(amount);
+    //         paymentRequest.setCurrency("LKR");
+    //         paymentRequest.setStudentId(booking.getStudentProfile().getStudentId());
+    //         paymentRequest.setTutorId(slot.getTutorAvailability().getTutorProfile().getTutorId());
+    //         paymentRequest.setClassId(bookingId); // Use booking ID as class ID
 
-            // Generate payment hash using existing service
-            String paymentHash = paymentService.generatePaymentHash(paymentRequest);
+    //         // Generate payment hash using existing service
+    //         String paymentHash = paymentService.generatePaymentHash(paymentRequest);
 
-            // Prepare response with payment details
-            Map<String, Object> paymentResult = new java.util.HashMap<>();
-            paymentResult.put("hash", paymentHash);
-            paymentResult.put("orderId", paymentRequest.getOrderId());
-            paymentResult.put("amount", paymentRequest.getAmount());
-            paymentResult.put("currency", paymentRequest.getCurrency());
-            paymentResult.put("studentId", paymentRequest.getStudentId());
-            paymentResult.put("tutorId", paymentRequest.getTutorId());
-            paymentResult.put("bookingId", bookingId);
-            paymentResult.put("slotDate", slot.getSlotDate().toString());
-            paymentResult.put("startTime", slot.getTutorAvailability().getStartTime().toString());
-            paymentResult.put("endTime", slot.getTutorAvailability().getEndTime().toString());
+    //         // Prepare response with payment details
+    //         Map<String, Object> paymentResult = new java.util.HashMap<>();
+    //         paymentResult.put("hash", paymentHash);
+    //         paymentResult.put("orderId", paymentRequest.getOrderId());
+    //         paymentResult.put("amount", paymentRequest.getAmount());
+    //         paymentResult.put("currency", paymentRequest.getCurrency());
+    //         paymentResult.put("studentId", paymentRequest.getStudentId());
+    //         paymentResult.put("tutorId", paymentRequest.getTutorId());
+    //         paymentResult.put("bookingId", bookingId);
+    //         paymentResult.put("slotDate", slot.getSlotDate().toString());
+    //         paymentResult.put("startTime", slot.getTutorAvailability().getStartTime().toString());
+    //         paymentResult.put("endTime", slot.getTutorAvailability().getEndTime().toString());
 
-            log.info("Payment initiated for booking {} with amount {}", bookingId, amount);
-            return paymentResult;
+    //         log.info("Payment initiated for booking {} with amount {}", bookingId, amount);
+    //         return paymentResult;
 
-        } catch (Exception e) {
-            log.error("Payment processing failed for booking {}: {}", bookingId, e.getMessage());
-            throw new RuntimeException("Payment processing failed: " + e.getMessage());
-        }
-    }
+    //     } catch (Exception e) {
+    //         log.error("Payment processing failed for booking {}: {}", bookingId, e.getMessage());
+    //         throw new RuntimeException("Payment processing failed: " + e.getMessage());
+    //     }
+    // }
 
     /**
      * Handle payment notification (webhook)
      */
-    @Transactional
-    public void handlePaymentNotification(String orderId, String status) {
-        log.info("Handling payment notification for order {} with status {}", orderId, status);
+    // @Transactional
+    // public void handlePaymentNotification(String orderId, String status) {
+    //     log.info("Handling payment notification for order {} with status {}", orderId, status);
 
-        try {
-            Long bookingId = Long.parseLong(orderId);
+    //     try {
+    //         Long bookingId = Long.parseLong(orderId);
             
-            if ("SUCCESS".equals(status)) {
-                confirmBooking(bookingId, orderId);
-            } else {
-                // Payment failed, cancel the reservation
-                cancelBookingReservation(bookingId);
-            }
-        } catch (NumberFormatException e) {
-            log.error("Invalid booking ID in payment notification: {}", orderId);
-        } catch (Exception e) {
-            log.error("Error handling payment notification: {}", e.getMessage());
-        }
-    }
+    //         if ("SUCCESS".equals(status)) {
+    //             confirmBooking(bookingId, orderId);
+    //         } else {
+    //             // Payment failed, cancel the reservation
+    //             cancelBookingReservation(bookingId);
+    //         }
+    //     } catch (NumberFormatException e) {
+    //         log.error("Invalid booking ID in payment notification: {}", orderId);
+    //     } catch (Exception e) {
+    //         log.error("Error handling payment notification: {}", e.getMessage());
+    //     }
+    // }
 
     /**
      * Get student's bookings
