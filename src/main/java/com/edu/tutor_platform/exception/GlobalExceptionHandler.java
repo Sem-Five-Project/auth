@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.edu.tutor_platform.studentprofile.exception.StudentNotFoundException;
 import com.edu.tutor_platform.tutorprofile.exception.TutorNotFoundException;
+import com.edu.tutor_platform.faq.exception.FaqNotFoundException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -123,4 +124,15 @@ public class GlobalExceptionHandler {
         response.put("timestamp", System.currentTimeMillis());
         return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
     }
+
+    @ExceptionHandler(com.edu.tutor_platform.faq.exception.FaqNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleFaqNotFoundException(FaqNotFoundException ex) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("error", "FAQ_NOT_FOUND");
+        response.put("message", ex.getMessage());
+        response.put("statusCode", 404);
+        response.put("timestamp", System.currentTimeMillis());
+        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+    }
+
 }
