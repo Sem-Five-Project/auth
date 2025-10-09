@@ -38,13 +38,11 @@ public class TutorProfileService {
         tutorProfile.setHourlyRate(tutorDto.getHourlyRate());
         tutorProfile.setVerified(tutorDto.isVerified());
 
-
         TutorProfile updatedTutor = tutorProfileRepository.save(tutorProfile);
 
         TutorDto updatedTutorDto = new TutorDto();
         updatedTutorDto.setTutorId(updatedTutor.getTutorId());
         updatedTutorDto.setBio(updatedTutor.getBio());
-
 
         return updatedTutorDto;
     }
@@ -58,5 +56,15 @@ public class TutorProfileService {
     public TutorProfile getTutorById(Long tutorId) {
         return tutorProfileRepository.findById(tutorId)
                 .orElseThrow(() -> new TutorNotFoundException("Tutor not found with id: " + tutorId));
+    }
+
+    public TutorProfile getTutorProfileById(Long tutorId) {
+        return tutorProfileRepository.findById(tutorId)
+                .orElseThrow(() -> new TutorNotFoundException("Tutor not found with id: " + tutorId));
+    }
+
+    @Transactional
+    public TutorProfile save(TutorProfile tutorProfile) {
+        return tutorProfileRepository.save(tutorProfile);
     }
 }
