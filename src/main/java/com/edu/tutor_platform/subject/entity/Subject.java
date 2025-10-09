@@ -30,9 +30,9 @@ public class Subject {
 
 
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "stream")
-    private HighSchoolStreamType stream;
+//    @Enumerated(EnumType.STRING)
+//    @Column(name = "stream")
+//    private HighSchoolStreamType stream;
 
 
 

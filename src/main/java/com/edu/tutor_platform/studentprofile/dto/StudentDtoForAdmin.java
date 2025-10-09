@@ -1,6 +1,6 @@
 package com.edu.tutor_platform.studentprofile.dto;
 
-import com.edu.tutor_platform.studentprofile.entity.StudentProfileStatus;
+import com.edu.tutor_platform.studentprofile.enums.StudentProfileStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
