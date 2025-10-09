@@ -37,36 +37,33 @@ public class StudentProfileService {
                 studentProfileRepository.save(studentProfile);
         }
 
+        public List<StudentsDto> getAllStudents() {
+                List<StudentProfile> studentProfiles = studentProfileRepository.findAll();
+                return studentProfiles.stream()
+                                .map(profile -> new StudentsDto(
+                                                profile.getStudentId(),
+                                                profile.getUser().getFirstName(),
+                                                profile.getUser().getLastName(),
+                                                profile.getStatus(),
+                                                profile.getUser().getUsername()))
+                                .toList();
+        }
 
-    public List<StudentsDto> getAllStudents() {
-        List<StudentProfile> studentProfiles = studentProfileRepository.findAll();
-        return studentProfiles.stream()
-                .map(profile -> new StudentsDto(
-                        profile.getStudentId(),
-                        profile.getUser().getFirstName(),
-                        profile.getUser().getLastName(),
-                        profile.getStatus(),
-                        profile.getUser().getUsername()
-                ))
-                .toList();
-    }
-
-//         public List<StudentDto> getAllStudents() {
-//                 List<StudentProfile> studentProfiles = studentProfileRepository.findAll();
-//                 return studentProfiles.stream()
-//                                 .map(profile -> new StudentDto(
-//                                                 profile.getStudentId(),
-//                                                 profile.getUser().getFirstName(),
-//                                                 profile.getUser().getLastName(),
-//                                                 profile.getUser().getEmail(),
-//                                                 profile.getStatus(),
-//                                                 profile.getUser().getCreatedAt(),
-//                                                 profile.getUser().getLastLogin(),
-//                                                 profile.getAdminNotes(),
-//                                                 profile.getEducationLevel()))
-//                                 .toList();
-//         }
-
+        // public List<StudentDto> getAllStudents() {
+        // List<StudentProfile> studentProfiles = studentProfileRepository.findAll();
+        // return studentProfiles.stream()
+        // .map(profile -> new StudentDto(
+        // profile.getStudentId(),
+        // profile.getUser().getFirstName(),
+        // profile.getUser().getLastName(),
+        // profile.getUser().getEmail(),
+        // profile.getStatus(),
+        // profile.getUser().getCreatedAt(),
+        // profile.getUser().getLastLogin(),
+        // profile.getAdminNotes(),
+        // profile.getEducationLevel()))
+        // .toList();
+        // }
 
         public StudentDto updateStudentProfile(String id, StudentDto studentDto) {
                 Long studentId = Long.parseLong(id);
@@ -88,143 +85,138 @@ public class StudentProfileService {
                                 updatedProfile.getEducationLevel());
         }
 
+        // public StudentDto updateStudentProfile(String id, StudentDto studentDto) {
+        //         Long studentId = Long.parseLong(id);
+        //         StudentProfile studentProfile = studentProfileRepository.findById(studentId)
+        //                         .orElseThrow(() -> new StudentNotFoundException("Student not found with id: " + id));
+        //         studentProfile.setStatus(StudentProfileStatus.valueOf(String.valueOf(studentDto.getStatus())));
+        //         studentProfile.setEducationLevel(studentDto.getEducationLevel());
+        //         StudentProfile updatedProfile = studentProfileRepository.save(studentProfile);
+        //         return new StudentDto(
+        //                         updatedProfile.getStudentId(),
+        //                         updatedProfile.getUser().getFirstName(),
+        //                         updatedProfile.getUser().getLastName(),
+        //                         updatedProfile.getUser().getEmail(),
+        //                         updatedProfile.getStatus(),
+        //                         updatedProfile.getUser().getCreatedAt(),
+        //                         updatedProfile.getUser().getLastLogin(),
+        //                         updatedProfile.getEducationLevel());
+        // }
 
-    public StudentDto updateStudentProfile(String id, StudentDto studentDto) {
-        Long studentId = Long.parseLong(id);
-        StudentProfile studentProfile = studentProfileRepository.findById(studentId)
-                .orElseThrow(() -> new StudentNotFoundException("Student not found with id: " + id));
-        studentProfile.setStatus(StudentProfileStatus.valueOf(String.valueOf(studentDto.getStatus())));
-        studentProfile.setEducationLevel(studentDto.getEducationLevel());
-        StudentProfile updatedProfile = studentProfileRepository.save(studentProfile);
-        return new StudentDto(
-                updatedProfile.getStudentId(),
-                updatedProfile.getUser().getFirstName(),
-                updatedProfile.getUser().getLastName(),
-                updatedProfile.getUser().getEmail(),
-                updatedProfile.getStatus(),
-                updatedProfile.getUser().getCreatedAt(),
-                updatedProfile.getUser().getLastLogin(),
-                updatedProfile.getEducationLevel()
-        );
-    }
+        public void deleteStudentProfile(String id) {
+                Long studentId = Long.parseLong(id);
+                StudentProfile studentProfile = studentProfileRepository.findById(studentId)
+                                .orElseThrow(() -> new StudentNotFoundException("Student not found with id: " + id));
+                // Delete associated refresh tokens
+                refreshTokenService.deleteByUser(studentProfile.getUser());
+                // Delete student profile
+                studentProfileRepository.delete(studentProfile);
+        }
 
-    public void deleteStudentProfile(String id) {
-        Long studentId = Long.parseLong(id);
-        StudentProfile studentProfile = studentProfileRepository.findById(studentId)
-                .orElseThrow(() -> new StudentNotFoundException("Student not found with id: " + id));
-        // Delete associated refresh tokens
-        refreshTokenService.deleteByUser(studentProfile.getUser());
-        // Delete student profile
-        studentProfileRepository.delete(studentProfile);
-    }
+        public List<StudentsDto> getStudents(int page, int size) {
+                Pageable pageable = PageRequest.of(page, size);
+                Page<StudentProfile> studentProfiles = studentProfileRepository.findAll(pageable);
+                return studentProfiles.getContent().stream()
+                                .map(profile -> new StudentsDto(
+                                                profile.getStudentId(),
+                                                profile.getUser().getFirstName(),
+                                                profile.getUser().getLastName(),
+                                                profile.getStatus(),
+                                                profile.getUser().getUsername()))
+                                .toList();
+        }
 
-    public List<StudentsDto> getStudents(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<StudentProfile> studentProfiles = studentProfileRepository.findAll(pageable);
-        return studentProfiles.getContent().stream()
-                .map(profile -> new StudentsDto(
-                        profile.getStudentId(),
-                        profile.getUser().getFirstName(),
-                        profile.getUser().getLastName(),
-                        profile.getStatus(),
-                        profile.getUser().getUsername()
-                ))
-                .toList();
-    }
+        public StudentDtoForAdmin getStudentDetailsByIdForAdmin(long l) {
+                StudentProfile studentProfile = studentProfileRepository.findById(l)
+                                .orElseThrow(() -> new StudentNotFoundException("Student not found with id: " + l));
+                return new StudentDtoForAdmin(
+                                studentProfile.getStudentId(),
+                                studentProfile.getUser().getId(),
+                                studentProfile.getUser().getFirstName(),
+                                studentProfile.getUser().getLastName(),
+                                studentProfile.getUser().getEmail(),
+                                studentProfile.getUser().getUsername(),
+                                studentProfile.getUser().getProfileImage(),
+                                studentProfile.getStatus(),
+                                !studentProfile.getUser().isAccountNonLocked(),
+                                studentProfile.getAdminNotes(),
+                                studentProfile.getUser().getCreatedAt(),
+                                studentProfile.getUser().getLastLogin(),
+                                studentProfile.getUser().getUpdatedAt(),
+                                studentProfile.getEducationLevel());
+        }
 
-    public StudentDtoForAdmin getStudentDetailsByIdForAdmin(long l) {
-        StudentProfile studentProfile = studentProfileRepository.findById(l)
-                .orElseThrow(() -> new StudentNotFoundException("Student not found with id: " + l));
-        return new StudentDtoForAdmin(
-                studentProfile.getStudentId(),
-                studentProfile.getUser().getId(),
-                studentProfile.getUser().getFirstName(),
-                studentProfile.getUser().getLastName(),
-                studentProfile.getUser().getEmail(),
-                studentProfile.getUser().getUsername(),
-                studentProfile.getUser().getProfileImage(),
-                studentProfile.getStatus(),
-                !studentProfile.getUser().isAccountNonLocked(),
-                studentProfile.getAdminNotes(),
-                studentProfile.getUser().getCreatedAt(),
-                studentProfile.getUser().getLastLogin(),
-                studentProfile.getUser().getUpdatedAt(),
-                studentProfile.getEducationLevel()
-        );
-    }
+        public StudentDtoForAdmin updateStudentDetailsByIdForAdmin(long l, StudentDtoForAdmin studentDtoForAdmin) {
+                StudentProfile studentProfile = studentProfileRepository.findById(l)
+                                .orElseThrow(() -> new StudentNotFoundException("Student not found with id: " + l));
 
-    public StudentDtoForAdmin updateStudentDetailsByIdForAdmin(long l, StudentDtoForAdmin studentDtoForAdmin) {
-        StudentProfile studentProfile = studentProfileRepository.findById(l)
-                .orElseThrow(() -> new StudentNotFoundException("Student not found with id: " + l));
+                studentProfile.setStatus(StudentProfileStatus.valueOf(String.valueOf(studentDtoForAdmin.getStatus())));
+                studentProfile.setAdminNotes(studentDtoForAdmin.getAdminNotes());
 
-        studentProfile.setStatus(StudentProfileStatus.valueOf(String.valueOf(studentDtoForAdmin.getStatus())));
-        studentProfile.setAdminNotes(studentDtoForAdmin.getAdminNotes());
+                StudentProfile updatedProfile = studentProfileRepository.save(studentProfile);
+                return new StudentDtoForAdmin(
+                                updatedProfile.getStudentId(),
+                                updatedProfile.getUser().getId(),
+                                updatedProfile.getUser().getFirstName(),
+                                updatedProfile.getUser().getLastName(),
+                                updatedProfile.getUser().getEmail(),
+                                updatedProfile.getUser().getUsername(),
+                                updatedProfile.getUser().getProfileImage(),
+                                updatedProfile.getStatus(),
+                                !updatedProfile.getUser().isAccountNonLocked(),
+                                updatedProfile.getAdminNotes(),
+                                updatedProfile.getUser().getCreatedAt(),
+                                updatedProfile.getUser().getLastLogin(),
+                                updatedProfile.getUser().getUpdatedAt(),
+                                updatedProfile.getEducationLevel());
+        }
 
+        public StudentStatsDto getStudentStats() {
+                Long totalStudents = studentProfileRepository.count();
+                Long activeStudents = studentProfileRepository.countByStatus(StudentProfileStatus.ACTIVE);
+                Long suspendedStudents = studentProfileRepository.countByStatus(StudentProfileStatus.SUSPENDED);
+                Long newStudentsThisMonth = studentProfileRepository.countNewStudentsThisMonth();
 
-        StudentProfile updatedProfile = studentProfileRepository.save(studentProfile);
-        return new StudentDtoForAdmin(
-                updatedProfile.getStudentId(),
-                updatedProfile.getUser().getId(),
-                updatedProfile.getUser().getFirstName(),
-                updatedProfile.getUser().getLastName(),
-                updatedProfile.getUser().getEmail(),
-                updatedProfile.getUser().getUsername(),
-                updatedProfile.getUser().getProfileImage(),
-                updatedProfile.getStatus(),
-                !updatedProfile.getUser().isAccountNonLocked(),
-                updatedProfile.getAdminNotes(),
-                updatedProfile.getUser().getCreatedAt(),
-                updatedProfile.getUser().getLastLogin(),
-                updatedProfile.getUser().getUpdatedAt(),
-                updatedProfile.getEducationLevel()
-        );
-    }
+                return new StudentStatsDto(totalStudents, activeStudents, suspendedStudents, newStudentsThisMonth);
+        }
 
-    public StudentStatsDto getStudentStats() {
-        Long totalStudents = studentProfileRepository.count();
-        Long activeStudents = studentProfileRepository.countByStatus(StudentProfileStatus.ACTIVE);
-        Long suspendedStudents = studentProfileRepository.countByStatus(StudentProfileStatus.SUSPENDED);
-        Long newStudentsThisMonth = studentProfileRepository.countNewStudentsThisMonth();
+        public List<StudentsDto> searchStudentsByAdmin(String name, String username, String email, Long studentId,
+                        String status, int page, int size) {
+                Pageable pageable = PageRequest.of(page, size);
+                Page<StudentProfile> studentProfiles = studentProfileRepository.searchByAdmin(
+                                name != null ? name : "",
+                                username != null ? username : "",
+                                email != null ? email : "",
+                                studentId,
+                                status != null ? StudentProfileStatus.valueOf(status) : null,
+                                pageable);
 
-        return new StudentStatsDto(totalStudents, activeStudents, suspendedStudents, newStudentsThisMonth);
-    }
+                return studentProfiles.getContent().stream()
+                                .map(profile -> new StudentsDto(
+                                                profile.getStudentId(),
+                                                profile.getUser().getFirstName(),
+                                                profile.getUser().getLastName(),
+                                                profile.getStatus(),
+                                                profile.getUser().getUsername()))
+                                .toList();
+        }
 
-    public List<StudentsDto> searchStudentsByAdmin(String name, String username, String email, Long studentId, String status, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<StudentProfile> studentProfiles = studentProfileRepository.searchByAdmin(
-                name != null ? name : "",
-                username != null ? username : "",
-                email != null ? email : "",
-                studentId,
-                status != null ? StudentProfileStatus.valueOf(status) : null,
-                pageable
-        );
+        // public void deleteStudentProfile(String id) {
+        // Long studentId = Long.parseLong(id);
+        // StudentProfile studentProfile = studentProfileRepository.findById(studentId)
+        // .orElseThrow(() -> new StudentNotFoundException("Student not found with id: "
+        // + id));
+        // // Delete associated refresh tokens
+        // refreshTokenService.deleteByUser(studentProfile.getUser());
+        // // Delete student profile
+        // studentProfileRepository.delete(studentProfile);
+        // }
 
-        return studentProfiles.getContent().stream()
-                .map(profile -> new StudentsDto(
-                        profile.getStudentId(),
-                        profile.getUser().getFirstName(),
-                        profile.getUser().getLastName(),
-                        profile.getStatus(),
-                        profile.getUser().getUsername()
-                ))
-                .toList();
-    }
-
-//         public void deleteStudentProfile(String id) {
-//                 Long studentId = Long.parseLong(id);
-//                 StudentProfile studentProfile = studentProfileRepository.findById(studentId)
-//                                 .orElseThrow(() -> new StudentNotFoundException("Student not found with id: " + id));
-//                 // Delete associated refresh tokens
-//                 refreshTokenService.deleteByUser(studentProfile.getUser());
-//                 // Delete student profile
-//                 studentProfileRepository.delete(studentProfile);
-//         }
-
-//         public StudentProfile getStudentProfileByUserId(Long userId) {
-//                 return studentProfileRepository.findByUserIdAndStatus(userId, StudentProfileStatus.ACTIVE)
-//                                 .orElseThrow(() -> new StudentNotFoundException(
-//                                                 "Active student profile not found for user ID: " + userId));
-//         }
+        public StudentProfile getStudentProfileByUserId(Long userId) {
+        return studentProfileRepository.findByUserIdAndStatus(userId,
+        StudentProfileStatus.ACTIVE)
+        .orElseThrow(() -> new StudentNotFoundException(
+        "Active student profile not found for user ID: " + userId));
+        }
 
 }

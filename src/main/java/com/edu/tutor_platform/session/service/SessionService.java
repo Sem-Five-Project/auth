@@ -146,7 +146,7 @@ public class SessionService {
                 .build();
 
 
-
+    }
     public Session getSessionEntityById(Long id) {
         return sessionRepository.findById(id)
                 .orElseThrow(() -> new SessionNotFoundException("Session not found with id: " + id));

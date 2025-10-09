@@ -5,7 +5,7 @@ import com.edu.tutor_platform.faq.Dto.FaqStatsDto;
 import com.edu.tutor_platform.faq.entity.Faq;
 import com.edu.tutor_platform.faq.repository.FaqRepository;
 import org.springframework.stereotype.Service;
-import com.edu.tutor_platform.faq.exception.FaqNotFoundException;
+import com.edu.tutor_platform.faq.execption.FaqNotFoundException;
 
 import java.util.List;
 
