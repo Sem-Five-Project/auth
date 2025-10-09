@@ -94,4 +94,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     // Check if student has any pending payments
     @Query("SELECT COUNT(b) > 0 FROM Booking b WHERE b.studentProfile.studentId = :studentId AND b.isConfirmed = false AND b.lockedUntil > :now")
     Boolean hasActivePendingBookings(@Param("studentId") Long studentId, @Param("now") LocalDateTime now);
+
+       // Call DB function get_student_bookings returning a single JSON array string
+       @Query(value = "SELECT COALESCE(jsonb_agg(row_to_json(t)), '[]'::jsonb)::text FROM public.get_student_bookings(:studentId) t", nativeQuery = true)
+       String findStudentBookingsJson(@Param("studentId") Long studentId);
 }
