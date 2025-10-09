@@ -12,9 +12,12 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.edu.tutor_platform.studentprofile.exception.StudentNotFoundException;
 import com.edu.tutor_platform.tutorprofile.exception.TutorNotFoundException;
+
+import com.edu.tutor_platform.faq.exception.FaqNotFoundException;
 import com.edu.tutor_platform.rating.exception.RatingNotFoundException;
 import com.edu.tutor_platform.rating.exception.DuplicateRatingException;
 import com.edu.tutor_platform.rating.exception.UnauthorizedRatingException;
+
 
 import java.util.HashMap;
 import java.util.Map;
@@ -144,4 +147,26 @@ public class GlobalExceptionHandler {
         response.put("timestamp", System.currentTimeMillis());
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
+
+    // Java
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<Map<String, Object>> handleAccessDeniedException(org.springframework.security.access.AccessDeniedException ex) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("error", "ACCESS_DENIED");
+        response.put("message", "You do not have permission to access this resource.");
+        response.put("statusCode", 403);
+        response.put("timestamp", System.currentTimeMillis());
+        return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
+    }
+
+    @ExceptionHandler(com.edu.tutor_platform.faq.exception.FaqNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleFaqNotFoundException(FaqNotFoundException ex) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("error", "FAQ_NOT_FOUND");
+        response.put("message", ex.getMessage());
+        response.put("statusCode", 404);
+        response.put("timestamp", System.currentTimeMillis());
+        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+    }
+
 }

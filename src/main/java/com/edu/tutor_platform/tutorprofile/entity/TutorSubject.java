@@ -46,7 +46,7 @@ public class TutorSubject {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
+    @Column(name = "tutor_subject_id")
     private Long id;
 
     // Many subjects belong to one tutor
@@ -59,8 +59,14 @@ public class TutorSubject {
     @JoinColumn(name = "subject_id", nullable = false)
     private Subject subject;
 
+    @Column(name= "verification_docs")
+    private String verificationDocs;
+
     @Column(name = "hourly_rate", precision = 10, scale = 2, nullable = false)
     private BigDecimal hourlyRate;
+
+    @Column(name= "verification")
+    private String verification;
 
     // Note: Languages are handled separately via TutorLanguage junction table
     // No language_id in tutor_subjects table

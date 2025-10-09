@@ -25,6 +25,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import com.edu.tutor_platform.tutorprofile.entity.TutorProfileStatus;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -45,7 +46,11 @@ public interface TutorProfileRepository extends JpaRepository<TutorProfile, Long
     @Query("SELECT DISTINCT CONCAT(u.firstName, ' ', u.lastName) FROM TutorProfile tp JOIN tp.user u " +
            "WHERE LOWER(CONCAT(u.firstName, ' ', u.lastName)) LIKE LOWER(CONCAT(:query, '%'))")
     List<String> findTutorNameSuggestions(@Param("query") String query, Pageable pageable);
-    
+
+
+
+
+
     // Count search results
     @Query("SELECT COUNT(tp) FROM TutorProfile tp JOIN tp.user u WHERE " +
            "(LOWER(CONCAT(u.firstName, ' ', u.lastName)) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
@@ -54,4 +59,27 @@ public interface TutorProfileRepository extends JpaRepository<TutorProfile, Long
     Long countSearchResults(@Param("query") String query,
                            @Param("minRating") BigDecimal minRating,
                            @Param("minExperience") Integer minExperience);
+
+
+    @Query("SELECT tp FROM TutorProfile tp JOIN tp.user u WHERE " +
+            "(:name IS NULL OR LOWER(CONCAT(u.firstName, ' ', u.lastName)) LIKE :name) AND " +
+            "(:username IS NULL OR LOWER(u.username) LIKE :username) AND " +
+            "(:email IS NULL OR LOWER(u.email) LIKE :email) AND " +
+            "(:tutorId IS NULL OR tp.tutorId = :tutorId) AND " +
+            "(:status IS NULL OR UPPER(tp.status) = :status) AND " +
+            "(:verified IS NULL OR tp.verified = :verified)")
+    Page<TutorProfile> searchByAdmin(
+            @Param("name") String name,
+            @Param("username") String username,
+            @Param("email") String email,
+            @Param("tutorId") Long tutorId,
+            @Param("status") String status,
+            @Param("verified") Boolean verified,
+            Pageable pageable);
+
+    List<TutorProfile> findByStatusIsNull();
+
+    @Query("SELECT tp FROM TutorProfile tp JOIN tp.tutorSubjects tus WHERE tus.verification = 'PENDING' AND tp.status = 'ACTIVE' AND tp.verified = true")
+    List<TutorProfile> findByTutorsHavePendingSubjects();
+
 }
