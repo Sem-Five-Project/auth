@@ -5,6 +5,7 @@ import com.edu.tutor_platform.tutorprofile.entity.TutorProfile;
 import com.edu.tutor_platform.tutorprofile.entity.TutorProfileStatus;
 import com.edu.tutor_platform.tutorprofile.exception.TutorNotFoundException;
 import com.edu.tutor_platform.tutorprofile.repository.TutorProfileRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Page;
@@ -19,18 +20,18 @@ import java.util.List;
 public class TutorProfileService {
     private final TutorProfileRepository tutorProfileRepository;
 
-//    public List<TutorDto> getAllTutors(int page, int size) {
-//        List<TutorProfile> tutorProfiles = tutorProfileRepository.findAll();
-//        return tutorProfiles.stream().map(tutor -> {
-//            TutorDto dto = new TutorDto();
-//            dto.setTutorId(tutor.getTutorId());
-//            dto.setBio(tutor.getBio());
-//            dto.setHourlyRate(tutor.getHourlyRate());
-//            dto.setVerified(tutor.isVerified());
-//            return dto;
-//        }).toList();
-//
-//    }
+    // public List<TutorDto> getAllTutors(int page, int size) {
+    // List<TutorProfile> tutorProfiles = tutorProfileRepository.findAll();
+    // return tutorProfiles.stream().map(tutor -> {
+    // TutorDto dto = new TutorDto();
+    // dto.setTutorId(tutor.getTutorId());
+    // dto.setBio(tutor.getBio());
+    // dto.setHourlyRate(tutor.getHourlyRate());
+    // dto.setVerified(tutor.isVerified());
+    // return dto;
+    // }).toList();
+    //
+    // }
 
     public TutorDto adminUpdateTutorProfile(String id, TutorDto tutorDto) {
         TutorProfile tutorProfile = tutorProfileRepository.findById(Long.parseLong(id))
@@ -41,11 +42,9 @@ public class TutorProfileService {
         tutorProfile.setRating(tutorDto.getRating());
         tutorProfile.setStatus(tutorDto.getStatus());
 
-
         tutorProfile.setBio(tutorDto.getBio());
         tutorProfile.setHourlyRate(tutorDto.getHourlyRate());
-        tutorProfile.setVerified(tutorDto.isVerified());
-
+        tutorProfile.setVerified(tutorDto.getVerified());
 
         TutorProfile updatedTutor = tutorProfileRepository.save(tutorProfile);
 
@@ -82,13 +81,11 @@ public class TutorProfileService {
                 .orElseThrow(() -> new TutorNotFoundException("Tutor not found with id: " + tutorId));
     }
 
-
     public List<TutorsDto> getAllTutors(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         Page<TutorProfile> tutorPage = tutorProfileRepository.findAll(pageable);
         return getTutorsDtos(tutorPage);
     }
-
 
     public TutorDto getTutorDetailsById(long l) {
         TutorProfile tutor = tutorProfileRepository.findById(l)
@@ -118,8 +115,8 @@ public class TutorProfileService {
     }
 
     public List<TutorsDto> searchTutorsByAdmin(String name, String username, String email,
-                                               Long tutorId, String status,
-                                               Boolean verified, int page, int size) {
+            Long tutorId, String status,
+            Boolean verified, int page, int size) {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("tutorId").descending());
 
@@ -128,16 +125,10 @@ public class TutorProfileService {
         String emailPattern = (email == null || email.isBlank()) ? null : "%" + email.toLowerCase() + "%";
 
         Page<TutorProfile> tutorPage = tutorProfileRepository.searchByAdmin(
-                namePattern, usernamePattern, emailPattern, tutorId, status, verified, pageable
-        );
+                namePattern, usernamePattern, emailPattern, tutorId, status, verified, pageable);
 
         return getTutorsDtos(tutorPage);
     }
-
-
-
-
-
 
     private List<TutorsDto> getTutorsDtos(Page<TutorProfile> tutorPage) {
         return tutorPage.stream().map(tutor -> {
@@ -155,12 +146,8 @@ public class TutorProfileService {
     public TutorStatsDto getTutorStatistics() {
 
         long totalTutors = tutorProfileRepository.count();
-        long verifiedTutors = tutorProfileRepository.count((root, query, cb) ->
-                cb.isTrue(root.get("verified"))
-        );
-        long activeTutors = tutorProfileRepository.count((root, query, cb) ->
-                cb.equal(root.get("status"), "ACTIVE")
-        );
+        long verifiedTutors = tutorProfileRepository.count((root, query, cb) -> cb.isTrue(root.get("verified")));
+        long activeTutors = tutorProfileRepository.count((root, query, cb) -> cb.equal(root.get("status"), "ACTIVE"));
         double avarageRating = tutorProfileRepository.findAll().stream()
                 .map(TutorProfile::getRating)
                 .filter(rating -> rating != null)
@@ -190,7 +177,8 @@ public class TutorProfileService {
             dto.setTutorId(tutor.getTutorId());
             dto.setUserName(tutor.getUser().getUsername());
             List<SubjectInfoDto> subjectNames = tutor.getTutorSubjects().stream()
-                    .map(subject -> new SubjectInfoDto(subject.getSubject().getSubjectId(), subject.getSubject().getName(), subject.getVerificationDocs()) )
+                    .map(subject -> new SubjectInfoDto(subject.getSubject().getSubjectId(),
+                            subject.getSubject().getName(), subject.getVerificationDocs()))
                     .toList();
             dto.setSubjects(subjectNames);
             dto.setSubmissionDate(tutor.getUser().getUpdatedAt());
@@ -209,13 +197,13 @@ public class TutorProfileService {
                     .map(subject -> new SubjectInfoDto(
                             subject.getSubject().getSubjectId(),
                             subject.getSubject().getName(),
-                            subject.getVerificationDocs())
-                    )
+                            subject.getVerificationDocs()))
                     .toList();
 
             dto.setSubjectInfo(subjects);
             return dto;
         }).toList();
+    }
 
     public TutorProfile getTutorProfileById(Long tutorId) {
         return tutorProfileRepository.findById(tutorId)

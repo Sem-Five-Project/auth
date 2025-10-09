@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.edu.tutor_platform.studentprofile.exception.StudentNotFoundException;
 import com.edu.tutor_platform.tutorprofile.exception.TutorNotFoundException;
 
-import com.edu.tutor_platform.faq.exception.FaqNotFoundException;
+import com.edu.tutor_platform.faq.execption.FaqNotFoundException;
 import com.edu.tutor_platform.rating.exception.RatingNotFoundException;
 import com.edu.tutor_platform.rating.exception.DuplicateRatingException;
 import com.edu.tutor_platform.rating.exception.UnauthorizedRatingException;
@@ -159,7 +159,7 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
     }
 
-    @ExceptionHandler(com.edu.tutor_platform.faq.exception.FaqNotFoundException.class)
+    @ExceptionHandler(com.edu.tutor_platform.faq.execption.FaqNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleFaqNotFoundException(FaqNotFoundException ex) {
         Map<String, Object> response = new HashMap<>();
         response.put("error", "FAQ_NOT_FOUND");

@@ -22,4 +22,5 @@ public class StudentDto {
     private LocalDateTime createdAt;
     private LocalDateTime lastLogin;
     private String educationLevel;
+    private String adminNotes;
 }
