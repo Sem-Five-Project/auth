@@ -36,5 +36,6 @@ public class TutorAvailabilityService {
 
     public List<TutorAvailability> getByTutorId(Long tutorId) {
         return repository.findByTutorProfileTutorId(tutorId);
+
     }
 }

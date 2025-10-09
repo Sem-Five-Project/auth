@@ -2,19 +2,25 @@ package com.edu.tutor_platform.search.service;
 
 import com.edu.tutor_platform.search.dto.UnifiedSearchRequest;
 import com.edu.tutor_platform.search.dto.UnifiedSearchResponse;
-import com.edu.tutor_platform.search.repository.UnifiedSearchRepository;
+import com.edu.tutor_platform.search.repository.OptimizedSearchRepository;
+import com.edu.tutor_platform.subject.entity.Subject;
+import com.edu.tutor_platform.subject.repository.SubjectRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UnifiedSearchService {
     
-    private final UnifiedSearchRepository unifiedSearchRepository;
+    private final OptimizedSearchRepository optimizedSearchRepository;
+    private final SubjectRepository subjectRepository;
     
     /**
      * Performs unified search across tutors and classes
@@ -23,46 +29,89 @@ public class UnifiedSearchService {
      * @return Unified search results with metadata
      */
     public UnifiedSearchResponse performUnifiedSearch(UnifiedSearchRequest request) {
-        // Get search results
-        List<UnifiedSearchResponse.SearchResult> results = 
-            unifiedSearchRepository.performUnifiedSearch(
-                request.getQuery(), 
-                request.getMinRating(), 
-                request.getMinExperienceMonths(), 
-                request.getClassTypes(), 
-                request.getSubjectIds(), 
-                request.getSortBy(), 
-                request.getSortOrder(), 
-                request.getPage(), 
+        log.info("Performing optimized unified search with request: {}", request);
+        
+        try {
+            // Convert subject name to subject ID if provided
+            Integer subjectId = null;
+            if (request.getSubject() != null && !request.getSubject().isEmpty()) {
+                subjectId = getSubjectIdByName(request.getSubject());
+                log.debug("Converted subject '{}' to ID: {}", request.getSubject(), subjectId);
+            }
+            
+            // Determine sort field mapping
+            String sortBy = mapSortField(request.getSortBy());
+            Boolean sortAsc = "asc".equalsIgnoreCase(request.getSortOrder());
+            
+            // Use the optimized stored procedure
+            UnifiedSearchResponse response = optimizedSearchRepository.findTutorsOptimized(
+                request.getMinRating(),
+                request.getMinExperience(),
+                request.getMinCompletionRate(),
+                subjectId,
+                request.getMinPrice(),
+                request.getMaxPrice(),
+                buildSearchKeyword(request),
+                sortBy,
+                sortAsc,
+                request.getPage(),
                 request.getSize()
             );
+            
+            log.info("Optimized search completed successfully");
+            return response;
+            
+        } catch (Exception e) {
+            log.error("Error in performUnifiedSearch: {}", e.getMessage(), e);
+            throw new RuntimeException("Search operation failed", e);
+        }
+    }
+    
+    /**
+     * Build search keyword from multiple possible fields
+     */
+    private String buildSearchKeyword(UnifiedSearchRequest request) {
+        StringBuilder keyword = new StringBuilder();
         
-        // Get total count for pagination
-        Integer totalResults = unifiedSearchRepository.getTotalSearchResults(
-            request.getQuery(), 
-            request.getMinRating(), 
-            request.getMinExperienceMonths(), 
-            request.getClassTypes(), 
-            request.getSubjectIds()
-        );
+        if (request.getQuery() != null && !request.getQuery().trim().isEmpty()) {
+            keyword.append(request.getQuery().trim());
+        }
         
-        // Calculate pagination metadata
-        int totalPages = (int) Math.ceil((double) totalResults / request.getSize());
+        if (request.getTutorName() != null && !request.getTutorName().isEmpty()) {
+            if (keyword.length() > 0) keyword.append(" ");
+            keyword.append(request.getTutorName().trim());
+        }
         
-        // Build metadata
-        UnifiedSearchResponse.SearchMetadata metadata = UnifiedSearchResponse.SearchMetadata.builder()
-                .totalResults(totalResults)
-                .currentPage(request.getPage())
-                .totalPages(totalPages)
-                .searchQuery(request.getQuery())
-                .pageSize(request.getSize())
-                .build();
+        return keyword.toString();
+    }
+    
+    /**
+     * Map frontend sort field to database column names
+     */
+    private String mapSortField(String sortBy) {
+        if (sortBy == null) return "rating";
         
-        // Build response
-        return UnifiedSearchResponse.builder()
-                .results(results)
-                .metadata(metadata)
-                .build();
+        return switch (sortBy.toLowerCase()) {
+            case "rating" -> "rating";
+            case "experience" -> "experience";
+            case "price" -> "price";
+            case "completion_rate" -> "completion_rate";
+            case "relevance" -> "relevance";
+            default -> "rating";
+        };
+    }
+    
+    /**
+     * Get subject ID by name for stored procedure
+     */
+    private Integer getSubjectIdByName(String subjectName) {
+        try {
+            Optional<Subject> subject = subjectRepository.findByNameIgnoreCase(subjectName);
+            return subject.map(s -> s.getSubjectId().intValue()).orElse(null);
+        } catch (Exception e) {
+            log.warn("Could not find subject by name '{}': {}", subjectName, e.getMessage());
+            return null;
+        }
     }
     
     /**
@@ -77,7 +126,18 @@ public class UnifiedSearchService {
             return List.of(); // Return empty list for very short queries
         }
         
-        return unifiedSearchRepository.getSearchSuggestions(query.trim(), limit);
+        try {
+            String suggestionsJson = optimizedSearchRepository.getSearchSuggestionsOptimized(query.trim(), limit);
+            
+            // Parse JSON array to List<String>
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            return mapper.readValue(suggestionsJson,
+                    mapper.getTypeFactory().constructCollectionType(List.class, String.class));
+                    
+        } catch (Exception e) {
+            log.error("Error getting search suggestions: {}", e.getMessage());
+            return List.of();
+        }
     }
     
     /**
@@ -88,9 +148,23 @@ public class UnifiedSearchService {
     public Map<String, Object> getFilterOptions() {
         Map<String, Object> filterOptions = new HashMap<>();
         
-        // Get available subjects
-        List<Map<String, Object>> subjects = unifiedSearchRepository.getAvailableSubjects();
-        filterOptions.put("subjects", subjects);
+        try {
+            // Get available subjects from database
+            List<Subject> subjects = subjectRepository.findAll();
+            List<Map<String, Object>> subjectOptions = subjects.stream()
+                    .map(subject -> {
+                        Map<String, Object> option = new HashMap<>();
+                        option.put("subject_id", subject.getSubjectId());
+                        option.put("name", subject.getName());
+                        return option;
+                    })
+                    .toList();
+            filterOptions.put("subjects", subjectOptions);
+            
+        } catch (Exception e) {
+            log.error("Error fetching subjects: {}", e.getMessage());
+            filterOptions.put("subjects", List.of());
+        }
         
         // Get available class types
         List<String> classTypes = List.of("lesson", "monthly", "individual");
@@ -103,21 +177,45 @@ public class UnifiedSearchService {
         ratingOptions.put("step", 0.5);
         filterOptions.put("rating", ratingOptions);
         
-        // Get experience ranges
+        // Get experience ranges (in months)
         Map<String, Object> experienceOptions = new HashMap<>();
         experienceOptions.put("min", 0);
         experienceOptions.put("max", 120); // 10 years max
         experienceOptions.put("step", 6);   // 6-month intervals
         filterOptions.put("experience", experienceOptions);
         
-        // Get sort options
+        // Get enhanced sort options
         List<Map<String, String>> sortOptions = List.of(
             Map.of("value", "relevance", "label", "Most Relevant"),
-            Map.of("value", "rating", "label", "Highest Rated"),
-            Map.of("value", "experience", "label", "Most Experienced"),
+            Map.of("value", "rating", "label", "Rating"),
+            Map.of("value", "experience", "label", "Experience"),
+            Map.of("value", "price", "label", "Price"),
+            Map.of("value", "completion_rate", "label", "Completion Rate"),
             Map.of("value", "class_name", "label", "Alphabetical")
         );
         filterOptions.put("sortOptions", sortOptions);
+        
+        // Get price ranges
+        Map<String, Object> priceOptions = new HashMap<>();
+        priceOptions.put("min", 0.0);
+        priceOptions.put("max", 10000.0); // Max hourly rate in LKR
+        priceOptions.put("step", 100.0);   // Price step intervals
+        filterOptions.put("price", priceOptions);
+        
+        // Get completion rate ranges
+        Map<String, Object> completionRateOptions = new HashMap<>();
+        completionRateOptions.put("min", 0.0);
+        completionRateOptions.put("max", 100.0);
+        completionRateOptions.put("step", 5.0);
+        filterOptions.put("completionRate", completionRateOptions);
+        
+        // Get search type options
+        List<Map<String, String>> searchTypeOptions = List.of(
+            Map.of("value", "both", "label", "Tutors & Slots"),
+            Map.of("value", "tutors", "label", "Tutors Only"),
+            Map.of("value", "slots", "label", "Available Slots Only")
+        );
+        filterOptions.put("searchTypes", searchTypeOptions);
         
         return filterOptions;
     }

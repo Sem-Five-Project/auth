@@ -28,14 +28,14 @@
 //     @JoinColumn(name = "tutor_id", nullable = false)
 //     private TutorProfile tutor;
 // }
+
 package com.edu.tutor_platform.tutorprofile.entity;
 
 import com.edu.tutor_platform.subject.entity.Subject;
 import jakarta.persistence.*;
 import lombok.*;
-
+import com.edu.tutor_platform.tutorprofile.enums.VerificationEnum;
 import java.math.BigDecimal;
-
 @Entity
 @Table(name = "tutor_subjects")
 @Data
@@ -49,12 +49,14 @@ public class TutorSubject {
     @Column(name = "tutor_subject_id")
     private Long id;
 
-    // Many subjects belong to one tutor
+//    @Column(name = "tutor_subject_id") // ✅ matches DB
+//    private Integer  tutorSubjectId;
+
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tutor_id", nullable = false)
     private TutorProfile tutorProfile;
 
-    // Link to actual Subject entity
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "subject_id", nullable = false)
     private Subject subject;
@@ -65,10 +67,8 @@ public class TutorSubject {
     @Column(name = "hourly_rate", precision = 10, scale = 2, nullable = false)
     private BigDecimal hourlyRate;
 
-    @Column(name= "verification")
-    private String verification;
-
-    // Note: Languages are handled separately via TutorLanguage junction table
-    // No language_id in tutor_subjects table
+    @Enumerated(EnumType.STRING)
+    @Column(name = "verification")
+    private VerificationEnum verification;  // you'll need an enum in Java
 
 }

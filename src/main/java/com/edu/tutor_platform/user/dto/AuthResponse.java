@@ -13,6 +13,8 @@
 // }
 package com.edu.tutor_platform.user.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 public class AuthResponse {
     
     private String accessToken;
@@ -50,6 +52,7 @@ public class AuthResponse {
         this.user = user;
     }
     
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class UserInfo {
         private Long id;
         private String username;
@@ -57,18 +60,28 @@ public class AuthResponse {
         private String lastName;
         private String email;
         private String role;
+        private String profileImage;  // NEW
+        // Added optional role-specific identifiers
+        private Long studentId; // present if role = STUDENT
+        private Long tutorId;   // present if role = TUTOR
+
         
         public UserInfo() {}
-        
-        public UserInfo(Long id, String username, String firstName, String lastName, String email, String role) {
+                public UserInfo(Long id, String username, String firstName, String lastName, String email, String role) {
+            this(id, username, firstName, lastName, email, role, null);
+        }
+
+        // Full constructor including profileImage
+        public UserInfo(Long id, String username, String firstName, String lastName, String email, String role, String profileImage) {
             this.id = id;
             this.username = username;
             this.firstName = firstName;
             this.lastName = lastName;
             this.email = email;
             this.role = role;
-            System.out.println("UserInfo constructor called with role: " + role);
+            this.profileImage = profileImage;
         }
+        
         
         public Long getId() {
             return id;
@@ -114,8 +127,28 @@ public class AuthResponse {
             return role;
         }
         
+        public void setProfileImage(String profileImage) {
+            this.profileImage = profileImage;
+        }
+         public String getProfileImage() {
+            return profileImage;
+        }
+        
         public void setRole(String role) {
             this.role = role;
+        }
+
+        public Long getStudentId() {
+            return studentId;
+        }
+        public void setStudentId(Long studentId) {
+            this.studentId = studentId;
+        }
+        public Long getTutorId() {
+            return tutorId;
+        }
+        public void setTutorId(Long tutorId) {
+            this.tutorId = tutorId;
         }
     }
 }

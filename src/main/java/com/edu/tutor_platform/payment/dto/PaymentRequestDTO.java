@@ -13,16 +13,16 @@
 //     private String orderId;
 //     private double amount;
 //     private String currency = "LKR";
-    
+
 //     // Existing fields
 //     private Long classId;
 //     private Long studentId;
 //     private Long tutorId;
-    
+
 //     // New fields for slot booking
 //     private Long availabilityId;
 //     private Long slotId;
-    
+
 //     // Optional: Additional booking details
 //     private String sessionNotes;
 //     private String bookingType; // "individual", "group", etc.
@@ -37,7 +37,9 @@ public class PaymentRequestDTO {
     private String orderId;
     private double amount;
     private String currency = "LKR";
+
     private String paymentMethod; // e.g., PAYHERE
+
 
     // Existing fields used across services
     private Long classId;

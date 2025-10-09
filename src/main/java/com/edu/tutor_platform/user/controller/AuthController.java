@@ -64,6 +64,7 @@
 package com.edu.tutor_platform.user.controller;
 
 import com.edu.tutor_platform.user.dto.AuthResponse;
+import com.edu.tutor_platform.user.dto.AuthResponse.UserInfo;
 import com.edu.tutor_platform.user.dto.LoginRequest;
 import com.edu.tutor_platform.user.dto.RegisterRequest;
 import com.edu.tutor_platform.user.entity.LoginAttempt;
@@ -214,29 +215,33 @@ public class AuthController {
             return ResponseEntity.badRequest().body(error);
         }
     }
-@GetMapping("/me")
-public ResponseEntity<?> getCurrentUser(Authentication authentication) {
-    try {
-        if (authentication == null) {
-            return ResponseEntity.status(401).body(Map.of(
-                "success", false,
-                "error", "User not authenticated"
+    @GetMapping("/me")
+    public ResponseEntity<?> getCurrentUser(Authentication authentication) {
+        try {
+            if (authentication == null) {
+                return ResponseEntity.status(401).body(Map.of(
+                        "success", false,
+                        "error", "User not authenticated"
+                ));
+            }
+
+            com.edu.tutor_platform.user.entity.User user = (com.edu.tutor_platform.user.entity.User) authentication.getPrincipal();
+            UserInfo userInfo = authService.buildCurrentUserInfo(user);
+
+            // Mirror AuthResponse style but without issuing a new token
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("user", userInfo);
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "data", payload
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "error", e.getMessage()
             ));
         }
-
-        com.edu.tutor_platform.user.entity.User user = (com.edu.tutor_platform.user.entity.User) authentication.getPrincipal();
-
-        return ResponseEntity.ok(Map.of(
-            "success", true,
-            "data", Map.of("user", user)
-        ));
-    } catch (Exception e) {
-        return ResponseEntity.badRequest().body(Map.of(
-            "success", false,
-            "error", e.getMessage()
-        ));
     }
-}
 
     // @GetMapping("/me")
     // public ResponseEntity<?> getCurrentUser(Authentication authentication) {

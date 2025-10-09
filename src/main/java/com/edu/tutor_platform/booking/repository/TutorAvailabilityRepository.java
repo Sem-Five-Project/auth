@@ -1,17 +1,18 @@
-
 package com.edu.tutor_platform.booking.repository;
 
 import com.edu.tutor_platform.booking.entity.TutorAvailability;
-import com.edu.tutor_platform.booking.enums.DayOfWeek;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.DayOfWeek;
+import java.time.LocalTime;
 import java.util.List;
 
 @Repository
 public interface TutorAvailabilityRepository extends JpaRepository<TutorAvailability, Long> {
+
     // Fetch recurring availabilities with slotInstances to avoid lazy init error
     @Query("SELECT ta FROM TutorAvailability ta LEFT JOIN FETCH ta.slotInstances WHERE ta.recurring = true")
     List<TutorAvailability> findRecurringWithSlots();
@@ -35,8 +36,8 @@ public interface TutorAvailabilityRepository extends JpaRepository<TutorAvailabi
     List<TutorAvailability> findOverlappingAvailability(
             @Param("tutorId") Long tutorId,
             @Param("dayOfWeek") DayOfWeek dayOfWeek,
-            @Param("startTime") java.time.LocalTime startTime,
-            @Param("endTime") java.time.LocalTime endTime);
+            @Param("startTime") LocalTime startTime,
+            @Param("endTime") LocalTime endTime);
 
     // Delete availability by tutor ID
     void deleteByTutorProfileTutorId(Long tutorId);
