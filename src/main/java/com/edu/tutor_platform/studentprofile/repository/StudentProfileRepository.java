@@ -16,6 +16,8 @@ public interface StudentProfileRepository extends JpaRepository<StudentProfile, 
 //    Optional<StudentProfile> findByUserId(Long userId);
     Page<StudentProfile> findAll(Pageable pageable);
 
+    // Find a student profile by user ID and status
+    Optional<StudentProfile> findByUserIdAndStatus(Long userId, StudentProfileStatus status);
 
     Long countByStatus(StudentProfileStatus studentProfileStatus);
 
