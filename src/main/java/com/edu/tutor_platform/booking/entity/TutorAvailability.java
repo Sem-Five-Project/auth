@@ -15,6 +15,8 @@ import java.util.List;
 @Entity
 @Table(name = "tutor_availability")
 @Data
+@ToString(exclude = {"slotInstances", "tutorProfile"})
+@EqualsAndHashCode(exclude = {"slotInstances", "tutorProfile"})
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
