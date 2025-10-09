@@ -15,8 +15,6 @@ import java.util.List;
 public class SessionService {
     private final SessionRepository sessionRepository;
 
-
-
     public List<Session> getAllSessions() {
         return sessionRepository.findAll();
     }
@@ -26,13 +24,9 @@ public class SessionService {
         return sessionRepository.findByStartTimeBeforeAndEndTimeAfter(now, now);
     }
 
-
     public SessionDto getSessionById(Long id) {
         Session session = sessionRepository.findById(id)
                 .orElseThrow(() -> new SessionNotFoundException("Session not found with id: " + id));
-
-
-
 
         return SessionDto.builder()
                 .sessionId(session.getSessionId())
@@ -57,5 +51,10 @@ public class SessionService {
     public void setNotificationSent(Session session) {
         session.setNotificationSent(true);
         sessionRepository.save(session);
+    }
+
+    public Session getSessionEntityById(Long id) {
+        return sessionRepository.findById(id)
+                .orElseThrow(() -> new SessionNotFoundException("Session not found with id: " + id));
     }
 }

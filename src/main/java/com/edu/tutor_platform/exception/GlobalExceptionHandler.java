@@ -12,6 +12,9 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.edu.tutor_platform.studentprofile.exception.StudentNotFoundException;
 import com.edu.tutor_platform.tutorprofile.exception.TutorNotFoundException;
+import com.edu.tutor_platform.rating.exception.RatingNotFoundException;
+import com.edu.tutor_platform.rating.exception.DuplicateRatingException;
+import com.edu.tutor_platform.rating.exception.UnauthorizedRatingException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -73,17 +76,16 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleValidationErrors(MethodArgumentNotValidException ex) {
         Map<String, Object> response = new HashMap<>();
         Map<String, String> errors = new HashMap<>();
-        
-        ex.getBindingResult().getFieldErrors().forEach(error ->
-                errors.put(error.getField(), error.getDefaultMessage())
-        );
-        
+
+        ex.getBindingResult().getFieldErrors()
+                .forEach(error -> errors.put(error.getField(), error.getDefaultMessage()));
+
         response.put("error", "VALIDATION_FAILED");
         response.put("message", "Validation failed for request data");
         response.put("fields", errors);
         response.put("statusCode", 400);
         response.put("timestamp", System.currentTimeMillis());
-        
+
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
@@ -101,6 +103,36 @@ public class GlobalExceptionHandler {
         response.put("error", "Not Found");
         response.put("message", ex.getMessage());
         return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(RatingNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleRatingNotFoundException(RatingNotFoundException ex) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("error", "RATING_NOT_FOUND");
+        response.put("message", ex.getMessage());
+        response.put("statusCode", 404);
+        response.put("timestamp", System.currentTimeMillis());
+        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(DuplicateRatingException.class)
+    public ResponseEntity<Map<String, Object>> handleDuplicateRatingException(DuplicateRatingException ex) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("error", "DUPLICATE_RATING");
+        response.put("message", ex.getMessage());
+        response.put("statusCode", 409);
+        response.put("timestamp", System.currentTimeMillis());
+        return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(UnauthorizedRatingException.class)
+    public ResponseEntity<Map<String, Object>> handleUnauthorizedRatingException(UnauthorizedRatingException ex) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("error", "UNAUTHORIZED_RATING");
+        response.put("message", ex.getMessage());
+        response.put("statusCode", 403);
+        response.put("timestamp", System.currentTimeMillis());
+        return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
     }
 
     @ExceptionHandler(Exception.class)
