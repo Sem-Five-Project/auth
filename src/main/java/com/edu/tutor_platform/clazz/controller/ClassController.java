@@ -8,7 +8,10 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import static org.springframework.security.authorization.AuthorityReactiveAuthorizationManager.hasRole;
 
 @RestController
 @RequestMapping("/classes")
@@ -41,5 +44,12 @@ public class ClassController {
     public ResponseEntity<Void> deleteClass(@RequestParam Long tutorId, @RequestParam Long classId) {
         classService.deleteClass(tutorId, classId);
         return ResponseEntity.noContent().build();
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("")
+    public ResponseEntity<List<ClassEntity>> getAllClasses() {
+        List<ClassEntity> classes = classService.getAllClasses();
+        return ResponseEntity.ok(classes);
     }
 }

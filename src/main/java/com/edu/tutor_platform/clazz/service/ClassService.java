@@ -44,4 +44,8 @@ public class ClassService {
         }
         classRepository.deleteById(classId);
     }
+
+    public List<ClassEntity> getAllClasses() {
+        return classRepository.findAll();
+    }
 }

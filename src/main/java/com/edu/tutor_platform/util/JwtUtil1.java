@@ -1,12 +1,17 @@
 package com.edu.tutor_platform.util;
 
 import io.jsonwebtoken.*;
+import io.micrometer.common.KeyValue;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import java.util.List;
+import java.util.Collection;
 
 @Component
 public class JwtUtil1 {
@@ -37,6 +42,11 @@ public class JwtUtil1 {
     // Extract role
     public String extractRole(String token) {
         return extractAllClaims(token).get("role", String.class);
+    }
+
+    public Collection<SimpleGrantedAuthority> extractAuthorities(String token) {
+        String role = extractRole(token);
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role));
     }
 
     public boolean validateToken(String token, org.springframework.security.core.userdetails.UserDetails userDetails) {

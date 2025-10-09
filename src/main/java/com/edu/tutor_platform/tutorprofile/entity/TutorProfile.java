@@ -37,8 +37,7 @@ public class TutorProfile {
     private boolean verified = false;
 
     @Column(name = "status")
-    @Enumerated(EnumType.ORDINAL)
-    private TutorProfileStatus status = TutorProfileStatus.ACTIVE;
+    private String status = "ACTIVE";
 
     @Column(name="admin_notes")
     private String adminNotes;
@@ -70,6 +69,7 @@ public class TutorProfile {
 
     // Bidirectional mapping for TutorAvailability
     @com.fasterxml.jackson.annotation.JsonBackReference
-    @OneToOne(mappedBy = "tutorProfile")
-    private com.edu.tutor_platform.booking.entity.TutorAvailability tutorAvailability;
+    @OneToMany(mappedBy = "tutorProfile", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<com.edu.tutor_platform.booking.entity.TutorAvailability> tutorAvailabilities = new ArrayList<>();
+
 }
