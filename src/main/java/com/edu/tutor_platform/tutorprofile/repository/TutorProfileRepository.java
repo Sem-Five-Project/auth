@@ -28,8 +28,11 @@ import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 public interface TutorProfileRepository extends JpaRepository<TutorProfile, Long>, JpaSpecificationExecutor<TutorProfile> {
+       // Direct lookup by associated user id (improves performance vs. scanning all profiles)
+       Optional<TutorProfile> findByUser_Id(Long userId);
     
     // Search tutors by name and bio
     @Query("SELECT tp FROM TutorProfile tp JOIN tp.user u WHERE " +

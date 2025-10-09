@@ -11,17 +11,17 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/search")
-@CrossOrigin(origins = {"http://localhost:5173"}, allowCredentials = "true")
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000"}, allowCredentials = "true")
 @RequiredArgsConstructor
 public class UnifiedSearchController {
     
     private final UnifiedSearchService unifiedSearchService;
     
     /**
-     * Main unified search endpoint that searches across tutors and classes
-     * 
+     * Main unified search endpoint that searches across tutors and slots
+     *
      * @param request Search parameters including query, filters, and pagination
-     * @return Unified search results with both tutors and classes
+     * @return Unified search results with tutors and available slots
      */
     @PostMapping("/unified")
     public ResponseEntity<UnifiedSearchResponse> unifiedSearch(
@@ -32,21 +32,55 @@ public class UnifiedSearchController {
     }
     
     /**
-     * GET version for simple searches without filters
-     * 
-     * @param query Search term
-     * @param page Page number (default: 0)
-     * @param size Page size (default: 20)
+     * GET version with comprehensive filters for tutor and slot search
+     * Supports all filter parameters as query params for easy frontend integration
+     *
+     * @param query Search term (matches tutor names, subjects, class names)
+     * @param minRating Minimum tutor rating (0.0 - 5.0)
+     * @param minExperience Minimum experience in months
+     * @param minCompletionRate Minimum class completion rate (0.0 - 100.0)
+     * @param tutorName Filter by tutor name (first or last name)
+     * @param name Alternative parameter for tutor name
+     * @param subject Filter by subject name
+     * @param minPrice Minimum hourly rate
+     * @param maxPrice Maximum hourly rate
+     * @param sortBy Sort field: rating, experience, price, completion_rate, relevance
+     * @param sortOrder Sort order: asc, desc
+     * @param searchType Search type: tutors, slots, both
+     * @param page Page number (0-based)
+     * @param size Page size
      * @return Unified search results
      */
     @GetMapping("/unified")
     public ResponseEntity<UnifiedSearchResponse> unifiedSearchGet(
-            @RequestParam String query,
+            @RequestParam(required = false) String query,
+            @RequestParam(required = false) Double minRating,
+            @RequestParam(required = false) Integer minExperience,
+            @RequestParam(required = false) Double minCompletionRate,
+            @RequestParam(required = false) String tutorName,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String subject,
+            @RequestParam(required = false) Double minPrice,
+            @RequestParam(required = false) Double maxPrice,
+            @RequestParam(defaultValue = "relevance") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortOrder,
+            @RequestParam(defaultValue = "both") String searchType,
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "20") Integer size) {
+            System.out.println("Reached here111");
         
         UnifiedSearchRequest request = UnifiedSearchRequest.builder()
                 .query(query)
+                .minRating(minRating)
+                .minExperience(minExperience)
+                .minCompletionRate(minCompletionRate)
+                .tutorName(tutorName != null ? tutorName : name) // Support both parameter names
+                .subject(subject)
+                .minPrice(minPrice)
+                .maxPrice(maxPrice)
+                .sortBy(sortBy)
+                .sortOrder(sortOrder)
+                .searchType(searchType)
                 .page(page)
                 .size(size)
                 .build();
