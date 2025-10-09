@@ -6,6 +6,8 @@ import com.edu.tutor_platform.booking.dto.NextMonthSlotRespondDTO;
 import com.edu.tutor_platform.booking.dto.SlotInstanceDTO;
 import com.edu.tutor_platform.booking.dto.SlotSearchRequestDTO;
 import com.edu.tutor_platform.booking.service.SlotManagementService;
+import com.edu.tutor_platform.booking.service.BookingService;
+import com.edu.tutor_platform.booking.dto.StudentBookingsResponseDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +24,7 @@ import java.util.List;
 public class StudentBookingController {
 
     private final SlotManagementService slotManagementService;
+    private final BookingService bookingService;
 
     /**
      * Search for available slots
@@ -56,6 +59,26 @@ public class StudentBookingController {
 
         List<SlotInstanceDTO> slots = slotManagementService.searchAvailableSlots(searchRequest);
         return ResponseEntity.ok(slots);
+    }
+
+    /**
+     * Get booking and class details for a student via DB function get_student_bookings
+     * Example: /student/bookings/details?studentId=123
+     */
+    @GetMapping("/booking-details")
+    public ResponseEntity<?> getStudentBookingsWithDetails(@RequestParam Long studentId) {
+        try {
+            List<StudentBookingsResponseDTO> list = bookingService.getStudentBookingsWithDetails(studentId);
+            return ResponseEntity.ok(list);
+        } catch (IllegalArgumentException iae) {
+            return ResponseEntity.badRequest().body(java.util.Map.of(
+                    "error", "BAD_REQUEST",
+                    "message", iae.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(java.util.Map.of(
+                    "error", "INTERNAL_SERVER_ERROR",
+                    "message", e.getMessage()));
+        }
     }
 
     /**
