@@ -35,10 +35,17 @@ public class TutorProfileService {
     public TutorDto adminUpdateTutorProfile(String id, TutorDto tutorDto) {
         TutorProfile tutorProfile = tutorProfileRepository.findById(Long.parseLong(id))
                 .orElseThrow(() -> new TutorNotFoundException("Tutor not found"));
+
         tutorProfile.setAdminNotes(tutorDto.getAdminNotes());
         tutorProfile.setVerified(tutorDto.getVerified());
         tutorProfile.setRating(tutorDto.getRating());
         tutorProfile.setStatus(tutorDto.getStatus());
+
+
+        tutorProfile.setBio(tutorDto.getBio());
+        tutorProfile.setHourlyRate(tutorDto.getHourlyRate());
+        tutorProfile.setVerified(tutorDto.isVerified());
+
 
         TutorProfile updatedTutor = tutorProfileRepository.save(tutorProfile);
 
@@ -61,7 +68,6 @@ public class TutorProfileService {
 
         updatedTutorDto.setBio(updatedTutor.getBio());
 
-
         return updatedTutorDto;
     }
 
@@ -75,6 +81,7 @@ public class TutorProfileService {
         return tutorProfileRepository.findById(tutorId)
                 .orElseThrow(() -> new TutorNotFoundException("Tutor not found with id: " + tutorId));
     }
+
 
     public List<TutorsDto> getAllTutors(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
@@ -209,5 +216,14 @@ public class TutorProfileService {
             dto.setSubjectInfo(subjects);
             return dto;
         }).toList();
+
+    public TutorProfile getTutorProfileById(Long tutorId) {
+        return tutorProfileRepository.findById(tutorId)
+                .orElseThrow(() -> new TutorNotFoundException("Tutor not found with id: " + tutorId));
+    }
+
+    @Transactional
+    public TutorProfile save(TutorProfile tutorProfile) {
+        return tutorProfileRepository.save(tutorProfile);
     }
 }

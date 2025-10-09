@@ -36,7 +36,7 @@ public class Participants {
     @Column(name = "payment_id")
     private Integer paymentId;
 
-    @ManyToOne
-    @JoinColumn(name = "session_id", nullable = false)
-    private Session session;
+    // @ManyToOne
+    // @JoinColumn(name = "session_id", nullable = false)
+    // private Session session;
 }

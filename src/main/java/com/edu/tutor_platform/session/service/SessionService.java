@@ -26,6 +26,7 @@ public class SessionService {
     public SessionDto getSessionById(Long id) {
         Session session = sessionRepository.findById(id)
                 .orElseThrow(() -> new SessionNotFoundException("Session not found with id: " + id));
+
         return SessionDto.builder()
                 .sessionId(session.getSessionId())
                 .title(session.getSessionName())
@@ -143,6 +144,12 @@ public class SessionService {
                 .cancelledSessions(cancelledSessions)
                 .completedSessions(completedSessions)
                 .build();
+
+
+
+    public Session getSessionEntityById(Long id) {
+        return sessionRepository.findById(id)
+                .orElseThrow(() -> new SessionNotFoundException("Session not found with id: " + id));
 
     }
 }
