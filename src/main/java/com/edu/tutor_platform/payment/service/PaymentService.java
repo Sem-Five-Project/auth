@@ -16,9 +16,9 @@
 
 // @Service
 // public class PaymentService {
-
+    
 //     private static final Logger logger = Logger.getLogger(PaymentService.class.getName());
-
+    
 //     @Autowired
 //     private HashUtil hashUtil;
 //     @Autowired
@@ -44,7 +44,7 @@
 //             try {
 //                 // Check if this is an atomic payment-booking transaction
 //                 Optional<Payment> existingPayment = paymentRepository.findByOrderId(notification.getOrder_id());
-
+                
 //                 if (existingPayment.isPresent()) {
 //                     // This is an atomic transaction - complete it
 //                     atomicPaymentBookingService.completeAtomicPaymentBooking(notification.getOrder_id());
@@ -56,7 +56,7 @@
 //                     payment.setAmount(Double.parseDouble(notification.getPayhere_amount()));
 //                     payment.setCurrency(notification.getPayhere_currency());
 //                     payment.setStatus("SUCCESS");
-
+                    
 //                     // Set IDs from custom form data
 //                     try {
 //                         if (notification.getStudent_id() != null && !notification.getStudent_id().isEmpty()) {
@@ -74,7 +74,7 @@
 //                     } catch (NumberFormatException e) {
 //                         logger.warning("Invalid ID format in notification: " + e.getMessage());
 //                     }
-
+                    
 //                     paymentRepository.save(payment);
 //                     logger.info("Legacy payment saved successfully for Order ID: " + notification.getOrder_id());
 //                 }
@@ -86,7 +86,7 @@
 //             // Payment failed or cancelled
 //             String failureReason = "Payment failed with status: " + notification.getStatus_code();
 //             logger.warning("Payment failed for order " + notification.getOrder_id() + " - " + failureReason);
-
+            
 //             // Check if this is an atomic transaction and cancel it
 //             Optional<Payment> existingPayment = paymentRepository.findByOrderId(notification.getOrder_id());
 //             if (existingPayment.isPresent()) {
@@ -100,7 +100,7 @@
 //         try {
 //             // Log received data for debugging
 //             logger.info("Received notification data: " + notificationData.toString());
-
+            
 //             // Convert Map to PaymentNotificationDTO with null checks
 //             PaymentNotificationDTO notification = new PaymentNotificationDTO();
 //             notification.setMerchant_id(getFormValue(notificationData, "merchant_id"));
@@ -109,7 +109,7 @@
 //             notification.setPayhere_currency(getFormValue(notificationData, "payhere_currency"));
 //             notification.setStatus_code(getFormValue(notificationData, "status_code"));
 //             notification.setMd5sig(getFormValue(notificationData, "md5sig"));
-
+            
 //             // Extract custom fields
 //             notification.setStudent_id(getFormValue(notificationData, "student_id"));
 //             notification.setTutor_id(getFormValue(notificationData, "tutor_id"));
@@ -142,14 +142,14 @@
 //         if (value != null && !value.trim().isEmpty()) {
 //             return value.trim();
 //         }
-
+        
 //         // Try case-insensitive match for common PayHere field name variations
 //         for (Map.Entry<String, String> entry : data.entrySet()) {
 //             if (entry.getKey().equalsIgnoreCase(key)) {
 //                 return entry.getValue() != null ? entry.getValue().trim() : "";
 //             }
 //         }
-
+        
 //         // Check for common PayHere field name variations
 //         if ("md5sig".equalsIgnoreCase(key)) {
 //             value = data.get("md5Sig");
@@ -161,7 +161,7 @@
 //         } else if ("status_code".equalsIgnoreCase(key)) {
 //             value = data.get("statusCode");
 //         }
-
+        
 //         return value != null ? value.trim() : "";
 //     }
 
@@ -215,114 +215,123 @@ public class PaymentService {
 
     @PersistenceContext
     private EntityManager entityManager;
-    @Value("${payhere.merchant.id}")
+ @Value("${payhere.merchant.id}")
     private String merchantId;
 
     @Value("${payhere.merchant-secret}")
     private String merchantSecret;
 
-    @Autowired
-    private PaymentRepository paymentRepository;
+        @Autowired
+        private PaymentRepository paymentRepository;
 
-    // App timezone for generating business timestamps (defaults to Sri Lanka)
-    @Value("${app.timezone:Asia/Colombo}")
-    private String appTimeZone;
-    @Transactional
-    public void completePayment(
-            String paymentId,
-            Long tutorId,
-            Long slotId,
-            Long subjectId,
-            Long languageId,
-            Long classTypeId
-    ) {
-        entityManager.createNativeQuery(
-                        "CALL complete_payment(CAST(:paymentId AS uuid), :tutorId, :slotId, :subjectId, :languageId, :classTypeId)")
-                .setParameter("paymentId", paymentId)
-                .setParameter("tutorId", tutorId)
-                .setParameter("slotId", slotId)
-                .setParameter("subjectId", subjectId)
-                .setParameter("languageId", languageId)
-                .setParameter("classTypeId", classTypeId)
-                .executeUpdate();
+        // App timezone for generating business timestamps (defaults to Sri Lanka)
+        @Value("${app.timezone:Asia/Colombo}")
+        private String appTimeZone;
+        @Transactional
+        public void completePayment(
+                String paymentId,
+                String slotsJson, // JSON string for slots mapping
+                Long tutorId,
+                Long subjectId,
+                Long languageId,
+                Long classTypeId,
+                Long studentId,
+                java.time.LocalDateTime paymentTime,
+                java.math.BigDecimal amount,
+                Integer month,
+                Integer year
+        ) {
+                entityManager.createNativeQuery(
+                        "SELECT complete_payment(:paymentId, CAST(:slotsJson AS jsonb), :tutorId, :subjectId, :languageId, :classTypeId, :studentId, :paymentTime, :amount, CAST(:month AS smallint), CAST(:year AS smallint))")
+                        .setParameter("paymentId", paymentId)
+                        .setParameter("slotsJson", slotsJson)
+                        .setParameter("tutorId", tutorId)
+                        .setParameter("subjectId", subjectId)
+                        .setParameter("languageId", languageId)
+                        .setParameter("classTypeId", classTypeId)
+                        .setParameter("studentId", studentId)
+                        .setParameter("paymentTime", paymentTime)
+                        .setParameter("amount", amount)
+                        .setParameter("month", month)
+                        .setParameter("year", year)
+                        .getSingleResult();
+        }
+            public String generatePaymentHash(String orderId, BigDecimal amount, String currency) {
+    // PayHere spec (checkout v1):
+    // md5( merchant_id + order_id + amount(2dp) + currency + md5(merchant_secret) ) -> UPPERCASE
+    // Ensure exact 2 decimal places with dot separator
+    String formattedAmount = amount == null
+        ? "0.00"
+        : amount.setScale(2, RoundingMode.HALF_UP).toPlainString();
+
+    String md5Secret = DigestUtils.md5Hex(merchantSecret).toUpperCase();
+    String hashInput = merchantId + orderId + formattedAmount + currency + md5Secret;
+    return DigestUtils.md5Hex(hashInput).toUpperCase();
     }
-    public String generatePaymentHash(String orderId, BigDecimal amount, String currency) {
-        // PayHere spec (checkout v1):
-        // md5( merchant_id + order_id + amount(2dp) + currency + md5(merchant_secret) ) -> UPPERCASE
-        // Ensure exact 2 decimal places with dot separator
-        String formattedAmount = amount == null
-                ? "0.00"
-                : amount.setScale(2, RoundingMode.HALF_UP).toPlainString();
 
-        String md5Secret = DigestUtils.md5Hex(merchantSecret).toUpperCase();
-        String hashInput = merchantId + orderId + formattedAmount + currency + md5Secret;
-        return DigestUtils.md5Hex(hashInput).toUpperCase();
-    }
-
-    // Backward-compatible overload for callers using PaymentRequestDTO (amount as double)
-    public String generatePaymentHash(PaymentRequestDTO request) {
-        BigDecimal amt = request.getAmount() == 0
-                ? BigDecimal.ZERO
-                : BigDecimal.valueOf(request.getAmount());
-        String curr = request.getCurrency() == null ? "LKR" : request.getCurrency();
-        return generatePaymentHash(request.getOrderId(), amt, curr);
-    }
-
-    /**
-     * Create or update a Payment row as PENDING with a 15-minute expiry.
-     * If a payment with the same orderId exists, update it; otherwise create new.
-     */
-    @Transactional
-    public Payment initiatePayment(PaymentRequestDTO request) {
-        ZoneId zone = ZoneId.of(appTimeZone);
-        LocalDateTime now = LocalDateTime.now(zone);
-        LocalDateTime expiresAt = now.plusMinutes(15);
-
-        Optional<Payment> existingOpt = Optional.empty();
-        if (request.getOrderId() != null && !request.getOrderId().isBlank()) {
-            existingOpt = paymentRepository.findByOrderId(request.getOrderId());
+        // Backward-compatible overload for callers using PaymentRequestDTO (amount as double)
+        public String generatePaymentHash(PaymentRequestDTO request) {
+                BigDecimal amt = request.getAmount() == 0
+                                ? BigDecimal.ZERO
+                                : BigDecimal.valueOf(request.getAmount());
+                String curr = request.getCurrency() == null ? "LKR" : request.getCurrency();
+                return generatePaymentHash(request.getOrderId(), amt, curr);
         }
 
-        Payment payment = existingOpt.orElseGet(Payment::new);
+        /**
+         * Create or update a Payment row as PENDING with a 15-minute expiry.
+         * If a payment with the same orderId exists, update it; otherwise create new.
+         */
+        @Transactional
+        public Payment initiatePayment(PaymentRequestDTO request) {
+                ZoneId zone = ZoneId.of(appTimeZone);
+                LocalDateTime now = LocalDateTime.now(zone);
+                LocalDateTime expiresAt = now.plusMinutes(15);
 
-        // Only set createdAt on new records
-        if (payment.getPaymentId() == null) {
-            payment.setCreatedAt(now);
+                Optional<Payment> existingOpt = Optional.empty();
+                if (request.getOrderId() != null && !request.getOrderId().isBlank()) {
+                        existingOpt = paymentRepository.findByOrderId(request.getOrderId());
+                }
+
+                Payment payment = existingOpt.orElseGet(Payment::new);
+
+                // Only set createdAt on new records
+                if (payment.getPaymentId() == null) {
+                        payment.setCreatedAt(now);
+                }
+
+                payment.setOrderId(request.getOrderId());
+                payment.setStudentId(request.getStudentId());
+                if (request.getTutorId() != null) payment.setTutorId(request.getTutorId());
+                if (request.getSlotId() != null) payment.setSlotId(request.getSlotId());
+                if (request.getAvailabilityId() != null) payment.setAvailabilityId(request.getAvailabilityId());
+                if (request.getClassId() != null) payment.setClassId(request.getClassId());
+                payment.setAmount(request.getAmount());
+                payment.setCurrency(request.getCurrency() == null ? "LKR" : request.getCurrency());
+                payment.setStatus("PENDING");
+                payment.setExpiresAt(expiresAt);
+                payment.setPaymentMethod(request.getPaymentMethod() == null ? "PAYHERE" : request.getPaymentMethod());
+
+                return paymentRepository.save(payment);
         }
 
-        payment.setOrderId(request.getOrderId());
-        payment.setStudentId(request.getStudentId());
-        if (request.getTutorId() != null) payment.setTutorId(request.getTutorId());
-        if (request.getSlotId() != null) payment.setSlotId(request.getSlotId());
-        if (request.getAvailabilityId() != null) payment.setAvailabilityId(request.getAvailabilityId());
-        if (request.getClassId() != null) payment.setClassId(request.getClassId());
-        payment.setAmount(request.getAmount());
-        payment.setCurrency(request.getCurrency() == null ? "LKR" : request.getCurrency());
-        payment.setStatus("PENDING");
-        payment.setExpiresAt(expiresAt);
-        payment.setPaymentMethod(request.getPaymentMethod() == null ? "PAYHERE" : request.getPaymentMethod());
+        /**
+         * Returns true if payment status is PENDING, false otherwise.
+         */
+        @Transactional
+        public boolean isPaymentPending(Long paymentId) {
+                if (paymentId == null) return false;
+                return false; // numeric lookup deprecated; ids are UUID strings now
+        }
 
-        return paymentRepository.save(payment);
-    }
-
-    /**
-     * Returns true if payment status is PENDING, false otherwise.
-     */
-    @Transactional
-    public boolean isPaymentPending(Long paymentId) {
-        if (paymentId == null) return false;
-        return false; // numeric lookup deprecated; ids are UUID strings now
-    }
-
-    /**
-     * Check pending status using UUID identifier exposed to clients.
-     */
-    @Transactional
-    public boolean isPaymentPendingByUuid(String paymentId) {
-        if (paymentId == null || paymentId.isBlank()) return false;
-        return paymentRepository.findById(paymentId)
-                .map(p -> "PENDING".equalsIgnoreCase(p.getStatus()))
-                .orElse(false);
-    }
+        /**
+         * Check pending status using UUID identifier exposed to clients.
+         */
+        @Transactional
+        public boolean isPaymentPendingByUuid(String paymentId) {
+                if (paymentId == null || paymentId.isBlank()) return false;
+                return paymentRepository.findById(paymentId)
+                                .map(p -> "PENDING".equalsIgnoreCase(p.getStatus()))
+                                .orElse(false);
+        }
 }
-

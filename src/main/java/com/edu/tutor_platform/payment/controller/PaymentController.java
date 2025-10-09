@@ -5,7 +5,8 @@ import com.edu.tutor_platform.payment.service.PaymentService;
 import jakarta.validation.Valid;
 
 import com.edu.tutor_platform.payment.dto.PaymentRequestDTO;
-import com.edu.tutor_platform.payment.dto.PaymentConfirmDTO;
+import com.edu.tutor_platform.payment.dto.PaymentCompleteDTO;
+import com.edu.tutor_platform.payment.dto.PaymentCompleteResponse;
 import com.edu.tutor_platform.payment.dto.HashResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,16 +35,27 @@ public class PaymentController {
     private String merchantId;
 
       @PostMapping("/bookings/confirm")
-public ResponseEntity<String> confirmPayment(@Valid @RequestBody PaymentConfirmDTO dto) {
-    paymentService.completePayment(
-        dto.getPaymentId(),
-        dto.getTutorId(),
-        dto.getSlotId(),
-        dto.getSubjectId(),
-        dto.getLanguageId(),
-        dto.getClassTypeId()
-    );
-    return ResponseEntity.ok("Payment confirmed successfully!");
+public ResponseEntity<PaymentCompleteResponse> confirmPayment(@Valid @RequestBody PaymentCompleteDTO dto) {
+    try {
+        // Convert slots map to JSON string for SQL (e.g., {"1006":[332,333]})
+        String slotsJson = new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(dto.getSlots());
+        paymentService.completePayment(
+            dto.getPaymentId(),
+            slotsJson,
+            dto.getTutorId(),
+            dto.getSubjectId(),
+            dto.getLanguageId(),
+            dto.getClassTypeId(),
+            dto.getStudentId(),
+            dto.getPaymentTime(),
+            dto.getAmount(),
+            dto.getMonth(),
+            dto.getYear()
+        );
+        return ResponseEntity.ok(new PaymentCompleteResponse(true, "Payment completed and class booked successfully."));
+    } catch (Exception e) {
+        return ResponseEntity.badRequest().body(new PaymentCompleteResponse(false, e.getMessage()));
+    }
 }
 
 
