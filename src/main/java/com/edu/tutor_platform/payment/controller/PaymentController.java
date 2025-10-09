@@ -39,7 +39,7 @@ public ResponseEntity<PaymentCompleteResponse> confirmPayment(@Valid @RequestBod
     try {
         // Convert slots map to JSON string for SQL (e.g., {"1006":[332,333]})
         String slotsJson = new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(dto.getSlots());
-        paymentService.completePayment(
+        String status = paymentService.completePayment(
             dto.getPaymentId(),
             slotsJson,
             dto.getTutorId(),
@@ -52,9 +52,11 @@ public ResponseEntity<PaymentCompleteResponse> confirmPayment(@Valid @RequestBod
             dto.getMonth(),
             dto.getYear()
         );
-        return ResponseEntity.ok(new PaymentCompleteResponse(true, "Payment completed and class booked successfully."));
+        boolean success = "BOOKED".equalsIgnoreCase(status);
+        String message = success ? "Payment completed and class booked successfully." : "Payment refunded as some slots were not locked.";
+        return ResponseEntity.ok(new PaymentCompleteResponse(success, status, message));
     } catch (Exception e) {
-        return ResponseEntity.badRequest().body(new PaymentCompleteResponse(false, e.getMessage()));
+        return ResponseEntity.badRequest().body(new PaymentCompleteResponse(false, "ERROR", e.getMessage()));
     }
 }
 

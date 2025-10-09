@@ -9,5 +9,6 @@ import lombok.Data;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class PaymentCompleteResponse {
     private boolean success;
-    private String message;
+    private String status;  // "BOOKED" or "REFUND"
+    private String message; // human-readable description
 }

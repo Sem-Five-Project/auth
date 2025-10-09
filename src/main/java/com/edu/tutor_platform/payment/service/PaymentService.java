@@ -228,7 +228,7 @@ public class PaymentService {
         @Value("${app.timezone:Asia/Colombo}")
         private String appTimeZone;
         @Transactional
-        public void completePayment(
+                public String completePayment(
                 String paymentId,
                 String slotsJson, // JSON string for slots mapping
                 Long tutorId,
@@ -240,22 +240,23 @@ public class PaymentService {
                 java.math.BigDecimal amount,
                 Integer month,
                 Integer year
-        ) {
-                entityManager.createNativeQuery(
-                        "SELECT complete_payment(:paymentId, CAST(:slotsJson AS jsonb), :tutorId, :subjectId, :languageId, :classTypeId, :studentId, :paymentTime, :amount, CAST(:month AS smallint), CAST(:year AS smallint))")
-                        .setParameter("paymentId", paymentId)
-                        .setParameter("slotsJson", slotsJson)
-                        .setParameter("tutorId", tutorId)
-                        .setParameter("subjectId", subjectId)
-                        .setParameter("languageId", languageId)
-                        .setParameter("classTypeId", classTypeId)
-                        .setParameter("studentId", studentId)
-                        .setParameter("paymentTime", paymentTime)
-                        .setParameter("amount", amount)
-                        .setParameter("month", month)
-                        .setParameter("year", year)
-                        .getSingleResult();
-        }
+                ) {
+                        Object result = entityManager.createNativeQuery(
+                                "SELECT complete_payment(:paymentId, CAST(:slotsJson AS jsonb), :tutorId, :subjectId, :languageId, :classTypeId, :studentId, :paymentTime, :amount, CAST(:month AS smallint), CAST(:year AS smallint))")
+                                .setParameter("paymentId", paymentId)
+                                .setParameter("slotsJson", slotsJson)
+                                .setParameter("tutorId", tutorId)
+                                .setParameter("subjectId", subjectId)
+                                .setParameter("languageId", languageId)
+                                .setParameter("classTypeId", classTypeId)
+                                .setParameter("studentId", studentId)
+                                .setParameter("paymentTime", paymentTime)
+                                .setParameter("amount", amount)
+                                .setParameter("month", month)
+                                .setParameter("year", year)
+                                .getSingleResult();
+                        return result != null ? result.toString() : null;
+                }
             public String generatePaymentHash(String orderId, BigDecimal amount, String currency) {
     // PayHere spec (checkout v1):
     // md5( merchant_id + order_id + amount(2dp) + currency + md5(merchant_secret) ) -> UPPERCASE
