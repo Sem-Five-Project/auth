@@ -34,27 +34,18 @@ public class EmailService {
         this.sendGridApiKey = sendGridApiKey;
     }
 
-    public void sendEmail(String toEmail, String subject, String body) throws IOException {
-        sendEmail(defaultFromEmail, toEmail, subject, body);
+    public Response sendEmail(String toEmail, String subject, String body) throws IOException {
+        return sendEmail(defaultFromEmail, toEmail, subject, body);
     }
 
-    public void sendEmail(String fromEmail, String toEmail, String subject, String body) throws IOException {
-//        Dotenv dotenv = Dotenv.load();
-//        String apiKey = dotenv.get("SENDGRID_API_KEY");
-//        if (apiKey == null || apiKey.isEmpty()) {
-//            throw new IllegalStateException("SENDGRID_API_KEY environment variable is not set.");
-//        }
+    public Response sendEmail(String fromEmail, String toEmail, String subject, String body) throws IOException {
         if (sendGridApiKey == null || sendGridApiKey.isEmpty()) {
             throw new IllegalStateException("sendgrid.api.key property is not set.");
         }
-
-
-
         Email from = new Email(fromEmail);
         Email to = new Email(toEmail);
         Content content = new Content("text/plain", body);
         Mail mail = new Mail(from, subject, to, content);
-
         SendGrid sg = new SendGrid(sendGridApiKey);
         Request request = new Request();
         try {
@@ -62,14 +53,13 @@ public class EmailService {
             request.setEndpoint("mail/send");
             request.setBody(mail.build());
             Response response = sg.api(request);
-            System.out.println("Status Code: " + response.getStatusCode());
-            System.out.println("Body: " + response.getBody());
-            System.out.println("Headers: " + response.getHeaders());
-
+            log.info("Status Code: {}", response.getStatusCode());
+            log.info("Body: {}", response.getBody());
+            log.info("Headers: {}", response.getHeaders());
+            return response;
         } catch (IOException ex) {
             log.error("Failed to send email: {}", ex.getMessage(), ex);
             throw ex;
         }
     }
 }
-
