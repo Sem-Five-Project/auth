@@ -133,6 +133,7 @@
 //         } catch (Exception e) {
 //             logger.severe("Failed to process payment notification: " + e.getMessage());
 //             throw new RuntimeException("Failed to process payment notification: " + e.getMessage(), e);
+
 //         }
 //     }
 
@@ -204,14 +205,28 @@ import jakarta.transaction.Transactional;
 import java.math.RoundingMode;
 import org.apache.commons.codec.digest.DigestUtils;
 import java.math.BigDecimal;
+import java.util.List;
+import com.edu.tutor_platform.payment.dto.PaymentCompleteDTO;
 import com.edu.tutor_platform.payment.dto.PaymentRequestDTO;
 import com.edu.tutor_platform.payment.entity.Payment;
-import com.edu.tutor_platform.payment.repository.PaymentRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.edu.tutor_platform.payment.dto.PayHereRefundResponse;
+import com.edu.tutor_platform.payment.dto.PaymentStatusResponse;
+import com.edu.tutor_platform.payment.dto.RefundRequestDTO;
+import java.util.Map;
 import java.util.Optional;
+import com.edu.tutor_platform.booking.repository.BookingRepository;
+import com.edu.tutor_platform.booking.entity.Booking;
+import com.edu.tutor_platform.payment.repository.PaymentRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class PaymentService {
+
+    private static final Logger log = LoggerFactory.getLogger(PaymentService.class);
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -223,6 +238,12 @@ public class PaymentService {
 
         @Autowired
         private PaymentRepository paymentRepository;
+        @Autowired
+        private PayHereService payHereService;
+        @Autowired
+        private BookingRepository bookingRepository;
+        @Autowired
+        private ObjectMapper objectMapper;
 
         // App timezone for generating business timestamps (defaults to Sri Lanka)
         @Value("${app.timezone:Asia/Colombo}")
@@ -239,10 +260,17 @@ public class PaymentService {
                 java.time.LocalDateTime paymentTime,
                 java.math.BigDecimal amount,
                 Integer month,
-                Integer year
+                Integer year,
+                List<Long> nextMonthSlots
                 ) {
+                        // Build a PostgreSQL BIGINT[] literal from list, e.g., {1,2,3}
+                        String nextMonthArray = (nextMonthSlots == null || nextMonthSlots.isEmpty())
+                                ? "{}"
+                                : nextMonthSlots.stream().map(String::valueOf)
+                                        .collect(java.util.stream.Collectors.joining(",", "{", "}"));
+
                         Object result = entityManager.createNativeQuery(
-                                "SELECT complete_payment(:paymentId, CAST(:slotsJson AS jsonb), :tutorId, :subjectId, :languageId, :classTypeId, :studentId, :paymentTime, :amount, CAST(:month AS smallint), CAST(:year AS smallint))")
+                                "SELECT complete_paymentt(:paymentId, CAST(:slotsJson AS jsonb), :tutorId, :subjectId, :languageId, :classTypeId, :studentId, :paymentTime, :amount, CAST(:month AS smallint), CAST(:year AS smallint), CAST(:nextMonthSlots AS BIGINT[]))")
                                 .setParameter("paymentId", paymentId)
                                 .setParameter("slotsJson", slotsJson)
                                 .setParameter("tutorId", tutorId)
@@ -254,6 +282,7 @@ public class PaymentService {
                                 .setParameter("amount", amount)
                                 .setParameter("month", month)
                                 .setParameter("year", year)
+                                .setParameter("nextMonthSlots", nextMonthArray)
                                 .getSingleResult();
                         return result != null ? result.toString() : null;
                 }
@@ -334,5 +363,329 @@ public class PaymentService {
                 return paymentRepository.findById(paymentId)
                                 .map(p -> "PENDING".equalsIgnoreCase(p.getStatus()))
                                 .orElse(false);
+        }
+
+        /**
+         * Initiate a refund via PayHere and update local records.
+         */
+        @Transactional
+        public java.util.Map<String, Object> refundPayment(RefundRequestDTO request) {
+                if (request == null || request.getPaymentId() == null || request.getPaymentId().isBlank()) {
+                        throw new IllegalArgumentException("paymentId is required");
+                }
+
+                // Manual refunds should respect the 24-hour rule -> shouldRefund=false
+                return callProcessRefund(request.getPaymentId(), false);
+        }
+
+        /**
+         * Execute the DB function process_refund(p_payment_id, p_should_refund) and
+         * wrap the JSON result in the expected array shape:
+         * [ { "process_refund": { ...json... } } ]
+         */
+        @Transactional
+        protected java.util.Map<String, Object> callProcessRefund(String paymentId, boolean shouldRefund) {
+                Object dbResult = entityManager
+                                .createNativeQuery("SELECT process_refund(:p_payment_id, :p_should_refund)")
+                                .setParameter("p_payment_id", paymentId)
+                                .setParameter("p_should_refund", shouldRefund)
+                                .getSingleResult();
+
+                String jsonText = dbResult != null ? dbResult.toString() : "{}";
+                try {
+                        @SuppressWarnings("unchecked")
+                        java.util.Map<String, Object> json = objectMapper.readValue(jsonText, java.util.Map.class);
+                        java.util.Map<String, Object> wrapper = new java.util.HashMap<>();
+                        wrapper.put("process_refund", json);
+                        return wrapper;
+                } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+                        // If parsing fails, still return raw text in the expected envelope
+                        java.util.Map<String, Object> wrapper = new java.util.HashMap<>();
+                        wrapper.put("process_refund", java.util.Map.of(
+                                        "success", false,
+                                        "message", "Invalid JSON from process_refund",
+                                        "status", -1,
+                                        "raw", jsonText
+                        ));
+                        return wrapper;
+                }
+        }
+
+    /**
+     * Handles the incoming webhook notification from PayHere.
+     * Verifies the payment signature and updates payment and booking statuses.
+     */
+    @Transactional
+    public void handleNotify(Map<String, String> payload) {
+                // 1. Verify the signature to ensure the request is from PayHere
+                boolean sigOk = verifySignature(payload);
+                if (!sigOk) {
+                        // Log enough to debug without leaking secrets
+                        log.warn("PayHere signature verification FAILED for order_id={}, status_code={}, amount={}, currency={}",
+                                        payload.get("order_id"), payload.get("status_code"), payload.get("payhere_amount"), payload.get("payhere_currency"));
+                        // Important: Controller catches exceptions and returns 200 to stop PayHere retries.
+                        // The exception here explains why DB wasn't updated.
+                        throw new SecurityException("Invalid PayHere signature on notification.");
+                }
+
+        String statusCode = payload.get("status_code");
+        String orderId = payload.get("order_id");
+
+        // 2. Find the payment record using the order_id
+        Payment payment = paymentRepository.findByOrderId(orderId)
+                .orElseThrow(() -> new RuntimeException("Payment not found for order_id: " + orderId));
+
+        // Log incoming notification details
+        log.info("PayHere notify received: orderId={}, status={}, paymentId={}", orderId, statusCode, payload.get("payment_id"));
+
+                        if ("2".equals(statusCode)) { // Status code "2" means a successful payment
+                                handleSuccessfulNotification(payload, payment);
+                        } else {
+                                handleFailedNotification(payment, orderId, statusCode);
+                        }
+    }
+
+    /**
+     * Verifies the md5sig from PayHere to authenticate the notification.
+     * Formula: md5(merchant_id + order_id + amount + currency + status_code + md5(merchant_secret))
+     */
+        private boolean verifySignature(Map<String, String> payload) {
+        String merchantId = payload.get("merchant_id");
+        String orderId = payload.get("order_id");
+        String amount = payload.get("payhere_amount");
+        String currency = payload.get("payhere_currency");
+        String statusCode = payload.get("status_code");
+        String receivedSignature = payload.get("md5sig");
+
+        if (merchantId == null || orderId == null || amount == null || currency == null || statusCode == null || receivedSignature == null) {
+            return false; // Missing essential fields for verification
+        }
+
+                // IMPORTANT: Use the correct merchant secret. We try raw and Base64-decoded forms to aid misconfiguration.
+                String rawSecret = normalize(merchantSecret);
+                if (rawSecret == null) rawSecret = "";
+
+                String md5SecretRaw = DigestUtils.md5Hex(rawSecret).toUpperCase();
+                String inputRaw = merchantId + orderId + amount + currency + statusCode + md5SecretRaw;
+                String calcRaw = DigestUtils.md5Hex(inputRaw).toUpperCase();
+
+                if (receivedSignature.equals(calcRaw)) {
+                        return true;
+                }
+
+                // Fallback: If merchantSecret looks base64-encoded, try decoding once.
+                try {
+                        if (looksBase64(rawSecret)) {
+                                String decoded = new String(java.util.Base64.getDecoder().decode(rawSecret), java.nio.charset.StandardCharsets.UTF_8).trim();
+                                String md5SecretDecoded = DigestUtils.md5Hex(decoded).toUpperCase();
+                                String inputDecoded = merchantId + orderId + amount + currency + statusCode + md5SecretDecoded;
+                                String calcDecoded = DigestUtils.md5Hex(inputDecoded).toUpperCase();
+                                if (receivedSignature.equals(calcDecoded)) {
+                                        log.warn("PayHere signature matched only after Base64-decoding merchant secret. Please fix configuration: set payhere.merchant-secret to the RAW secret string.");
+                                        return true;
+                                }
+                        }
+                } catch (IllegalArgumentException ignore) {
+                        // Not valid base64; ignore
+                }
+
+                // Log a short diff for troubleshooting (do not log full secrets)
+                        log.debug("Signature mismatch: received={} calcRaw={} (first6)",
+                                safePrefix(receivedSignature), safePrefix(calcRaw));
+                return false;
+    }
+
+        private String safePrefix(String s) {
+                if (s == null) return "null";
+                return s.length() <= 6 ? s : s.substring(0, 6) + "...";
+        }
+
+        private boolean looksBase64(String s) {
+                if (s == null || s.isEmpty()) return false;
+                // Heuristic: base64 charset and often ends with '=' padding
+                boolean charsetOk = s.matches("[A-Za-z0-9+/=]+");
+                boolean hasPadding = s.endsWith("=") || s.endsWith("==");
+                return charsetOk && hasPadding;
+        }
+
+                private String normalize(String value) {
+                        if (value == null) return null;
+                        String trimmed = value.trim();
+                        return trimmed.isEmpty() ? null : trimmed;
+                }
+
+        private void handleSuccessfulNotification(Map<String, String> payload, Payment payment) {
+                String orderId = payment.getOrderId();
+
+                if ("SUCCESS".equalsIgnoreCase(normalize(payment.getStatus()))) {
+                        log.info("PayHere notify skipped: payment {} already marked SUCCESS", payment.getPaymentId());
+                        return;
+                }
+
+                PaymentCompleteDTO confirmDto = extractConfirmPayload(payload)
+                        .orElseThrow(() -> new IllegalStateException("Missing confirmation payload (custom_1) for order " + orderId));
+
+                String completionStatus = executeCompletion(orderId, payment, confirmDto);
+
+                if ("BOOKED".equalsIgnoreCase(normalize(completionStatus))) {
+                        finalizeSuccessfulPayment(payment, payload);
+                } else {
+                        String reason = completionStatus == null
+                                        ? "complete_payment returned null"
+                                        : "Slot validation failed (status=" + completionStatus + ")";
+                        log.warn("complete_payment reported {} for order {}", completionStatus, orderId);
+                        triggerAutomaticRefund(payment, payload, reason);
+                }
+        }
+
+        private void handleFailedNotification(Payment payment, String orderId, String statusCode) {
+                payment.setStatus("FAILED");
+                paymentRepository.saveAndFlush(payment);
+                updateBooking(orderId, "CANCELLED", false);
+                log.warn("PayHere reported failure for order {} with status {}", orderId, statusCode);
+        }
+
+        private Optional<PaymentCompleteDTO> extractConfirmPayload(Map<String, String> payload) {
+                String raw = firstNonNull(payload.get("custom_1"), payload.get("custom1"));
+                if (raw == null || raw.isBlank()) {
+                        log.warn("PayHere custom_1 payload missing");
+                        return Optional.empty();
+                }
+                try {
+                        return Optional.of(objectMapper.readValue(raw, PaymentCompleteDTO.class));
+                } catch (JsonProcessingException e) {
+                        log.error("Failed to parse custom_1 confirmation payload: {}", shorten(raw), e);
+                        return Optional.empty();
+                }
+        }
+
+        private String firstNonNull(String... values) {
+                if (values == null) return null;
+                for (String v : values) {
+                        if (v != null && !v.isBlank()) {
+                                return v;
+                        }
+                }
+                return null;
+        }
+
+        private String shorten(String raw) {
+                if (raw == null) return "null";
+                return raw.length() <= 120 ? raw : raw.substring(0, 117) + "...";
+        }
+
+        private String executeCompletion(String orderId, Payment payment, PaymentCompleteDTO dto) {
+                try {
+                        if (dto.getSlots() == null || dto.getSlots().isEmpty()) {
+                                log.warn("Confirmation payload for order {} missing slots; cannot finalize booking", orderId);
+                                return null;
+                        }
+
+                        String slotsJson = objectMapper.writeValueAsString(dto.getSlots());
+                        String paymentIdParam = dto.getPaymentId() != null ? dto.getPaymentId() : payment.getPaymentId();
+                        if (paymentIdParam == null) {
+                                log.warn("No paymentId present in confirmation payload or record for order {}", orderId);
+                                return null;
+                        }
+
+                        String result = completePayment(
+                                        paymentIdParam,
+                                        slotsJson,
+                                        coalesce(dto.getTutorId(), payment.getTutorId()),
+                                        dto.getSubjectId(),
+                                        dto.getLanguageId(),
+                                        dto.getClassTypeId(),
+                                        coalesce(dto.getStudentId(), payment.getStudentId()),
+                                        dto.getPaymentTime(),
+                                        dto.getAmount(),
+                                        dto.getMonth(),
+                                        dto.getYear(),
+                                        dto.getNextMonthSlots());
+                        log.info("complete_payment executed for order {} -> {}", orderId, result);
+                        return result;
+                } catch (Exception ex) {
+                        log.error("Error executing complete_payment for order {}", orderId, ex);
+                        return null;
+                }
+        }
+
+        private void finalizeSuccessfulPayment(Payment payment, Map<String, String> payload) {
+                applyPayHereDetails(payment, payload);
+                payment.setStatus("SUCCESS");
+                payment.setCompletedAt(LocalDateTime.now(ZoneId.of(appTimeZone)));
+                paymentRepository.saveAndFlush(payment);
+                updateBooking(payment.getOrderId(), "CONFIRMED", true);
+                log.info("Payment {} marked SUCCESS after complete_payment", payment.getPaymentId());
+        }
+
+        private void triggerAutomaticRefund(Payment payment, Map<String, String> payload, String reason) {
+                // First, run DB-side refund with should_refund = true (instant refund for slot conflicts)
+                try {
+                        java.util.Map<String, Object> dbOutcome = callProcessRefund(payment.getPaymentId(), true);
+                        log.info("process_refund outcome for payment {} => {}", payment.getPaymentId(), dbOutcome);
+                } catch (Exception e) {
+                        log.error("process_refund failed for payment {}", payment.getPaymentId(), e);
+                }
+
+                // Then, attempt PayHere refund to actually reverse the charge
+                applyPayHereDetails(payment, payload);
+                String payHerePaymentId = payment.getPayherePaymentId();
+                if (payHerePaymentId == null) {
+                        log.warn("Skipping gateway refund: missing PayHere payment id for payment {}", payment.getPaymentId());
+                        return;
+                }
+                try {
+                        PayHereRefundResponse resp = payHereService.refund(payHerePaymentId,
+                                        reason != null ? reason : "Automatic refund due to slot conflict");
+                        log.info("PayHere refund attempted for payment {} -> status {}", payment.getPaymentId(), resp.getStatus());
+                } catch (Exception ex) {
+                        log.error("Failed to call PayHere refund API for payment {}", payment.getPaymentId(), ex);
+                }
+        }
+
+        private void applyPayHereDetails(Payment payment, Map<String, String> payload) {
+                String payHereId = normalize(payload.get("payment_id"));
+                if (payHereId != null) {
+                        payment.setPayherePaymentId(payHereId);
+                }
+
+                String method = normalize(payload.get("payment_method"));
+                if (method == null) {
+                        method = payment.getPaymentMethod() != null ? payment.getPaymentMethod() : "PAYHERE";
+                }
+                payment.setPaymentMethod(method);
+                payment.setCardHolderName(normalize(payload.get("card_holder_name")));
+        }
+
+        private void updateBooking(String orderId, String bookingStatus, Boolean confirmed) {
+                if (orderId == null) return;
+                bookingRepository.findByOrderId(orderId).ifPresent(booking -> {
+                        if (bookingStatus != null) booking.setBookingStatus(bookingStatus);
+                        if (confirmed != null) booking.setIsConfirmed(confirmed);
+                        bookingRepository.save(booking);
+                });
+        }
+
+        private <T> T coalesce(T primary, T fallback) {
+                return primary != null ? primary : fallback;
+        }
+
+        @Transactional
+        public PaymentStatusResponse getPaymentStatusByOrderId(String orderId) {
+                if (orderId == null || orderId.isBlank()) {
+                        throw new IllegalArgumentException("orderId is required");
+                }
+
+                Payment payment = paymentRepository.findByOrderId(orderId)
+                                .orElseThrow(() -> new RuntimeException("Payment not found for order_id: " + orderId));
+
+                String bookingStatus = bookingRepository.findByOrderId(orderId)
+                                .map(Booking::getBookingStatus)
+                                .orElse(null);
+
+                return new PaymentStatusResponse(orderId,
+                                payment.getStatus(),
+                                payment.getPayherePaymentId(),
+                                bookingStatus);
         }
 }
