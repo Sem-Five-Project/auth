@@ -10,6 +10,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -34,26 +35,30 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private UserDetailsServiceImpl userDetailsService;
     
     @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+    protected boolean shouldNotFilter(@NonNull HttpServletRequest request) throws ServletException {
         String path = request.getRequestURI();
         logger.info("Checking if JWT filter should be skipped for path: " + path);
         
         // Skip JWT filter for these specific public paths only
-        boolean shouldSkip = path.startsWith("/api/actuator/") ||
-                            path.startsWith("/actuator/") ||
-                            path.equals("/api/auth/login") ||
-                            path.equals("/api/auth/register") ||
-                            path.equals("/api/auth/refresh") ||
-                            path.equals("/api/auth/check-username") ||
-                            path.equals("/api/auth/rate-limit-status") ||
-                            path.startsWith("/api/payment/notify");
+    boolean shouldSkip = path.startsWith("/api/actuator/") ||
+                path.startsWith("/actuator/") ||
+                path.equals("/api/auth/login") ||
+                path.equals("/api/auth/register") ||
+                path.equals("/api/auth/refresh") ||
+                path.equals("/api/auth/check-username") ||
+                path.equals("/api/auth/rate-limit-status") ||
+                // PayHere webhook should skip JWT auth
+                path.equals("/api/payment/payhere/notify") ||
+                path.equals("/payment/payhere/notify");
         
         logger.info("Should skip JWT filter: " + shouldSkip);
         return shouldSkip;
     }
     
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+    protected void doFilterInternal(@NonNull HttpServletRequest request,
+                                    @NonNull HttpServletResponse response,
+                                    @NonNull FilterChain filterChain)
             throws ServletException, IOException {
         
         logger.info("Processing JWT authentication filter");

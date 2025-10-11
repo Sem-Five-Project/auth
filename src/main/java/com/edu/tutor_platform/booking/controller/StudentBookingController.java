@@ -3,6 +3,7 @@ package com.edu.tutor_platform.booking.controller;
 import com.edu.tutor_platform.booking.dto.MonthlyRecurringSlotsRespondDTO;
 import com.edu.tutor_platform.booking.dto.NextMonthSlotRequestDTO;
 import com.edu.tutor_platform.booking.dto.NextMonthSlotRespondDTO;
+import com.edu.tutor_platform.booking.dto.NextMonthSlotsView;
 import com.edu.tutor_platform.booking.dto.SlotInstanceDTO;
 import com.edu.tutor_platform.booking.dto.SlotSearchRequestDTO;
 import com.edu.tutor_platform.booking.service.SlotManagementService;
@@ -184,8 +185,15 @@ System.out.println("Recurring only filter1: " + recurring);
                     .year(year)
                     .month(month)
                     .build();
-            List<NextMonthSlotRespondDTO> result = slotManagementService.getNextMonthSlots(request);
-            return ResponseEntity.ok(result);
+                NextMonthSlotsView view = slotManagementService.getNextMonthSlots(request);
+                java.util.List<Object> payload = new java.util.ArrayList<>();
+                java.util.Map<String, Object> head = new java.util.LinkedHashMap<>();
+                head.put("all_slot_ids", view.getAllSlotIds() != null ? view.getAllSlotIds() : java.util.List.of());
+                payload.add(head);
+                if (view.getSlots() != null) {
+                    payload.addAll(view.getSlots());
+                }
+                return ResponseEntity.ok(payload);
         } catch (IllegalArgumentException iae) {
             return ResponseEntity.badRequest().body(java.util.Map.of(
                     "error", "BAD_REQUEST",
@@ -228,6 +236,8 @@ System.out.println("Recurring only filter1: " + recurring);
                     "message", e.getMessage()));
         }
     }
+
+}
     // @GetMapping("/slots") added by krishmal 2025/8/29
     // public ResponseEntity<List<SlotInstanceSummaryDTO>> getSlots(
     //         @RequestParam Long tutorId,
@@ -431,4 +441,3 @@ System.out.println("Recurring only filter1: " + recurring);
         
     //     return ResponseEntity.ok(paymentResult);
     // }
-}

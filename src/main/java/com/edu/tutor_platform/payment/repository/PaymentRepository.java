@@ -15,6 +15,8 @@ public interface PaymentRepository extends JpaRepository<Payment, String> {
     Optional<Payment> findByOrderId(String orderId);
     // Lookup by external UUID (primary key)
     Optional<Payment> findByPaymentId(String paymentId);
+    // Lookup by PayHere payment id
+    Optional<Payment> findByPayherePaymentId(String payherePaymentId);
     
     // Find payments by student ID
     List<Payment> findByStudentId(Long studentId);

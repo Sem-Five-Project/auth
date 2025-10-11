@@ -88,7 +88,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findExpiredUnconfirmedBookings(@Param("now") LocalDateTime now);
     
     // Find booking by order ID (for payment processing)
-    @Query("SELECT b FROM Booking b JOIN b.payment p WHERE p.orderId = :orderId")
+    @Query("SELECT b FROM Booking b WHERE b.orderId = :orderId")
     Optional<Booking> findByOrderId(@Param("orderId") String orderId);
     
     // Check if student has any pending payments
