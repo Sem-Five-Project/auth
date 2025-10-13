@@ -49,33 +49,8 @@ jobs:
           name: test-results
           path: target/surefire-reports/
 
-  build-and-push-staging:
-    name: Build and Push Staging Image
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install doctl
-        uses: digitalocean/action-doctl@v2
-        with:
-          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-
-      - name: Log in to DigitalOcean Container Registry
-        run: doctl registry login --expiry-seconds 1200
-
-      - name: Build and Push Staging Docker Image
-        run: |
-          docker build -t registry.digitalocean.com/${{ secrets.DO_REGISTRY_NAME }}/tutor-platform-auth:staging-${{ github.sha }} .
-          docker build -t registry.digitalocean.com/${{ secrets.DO_REGISTRY_NAME }}/tutor-platform-auth:staging-latest .
-          docker push registry.digitalocean.com/${{ secrets.DO_REGISTRY_NAME }}/tutor-platform-auth:staging-${{ github.sha }}
-          docker push registry.digitalocean.com/${{ secrets.DO_REGISTRY_NAME }}/tutor-platform-auth:staging-latest
-
   build-and-push-production:
-    name: Build and Push Production Image
+    name: Build and Push Production Image to DigitalOcean
     needs: test
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/production'
@@ -107,14 +82,16 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: v${{ github.run_number }}
-          release_name: Release v${{ github.run_number }}
+          release_name: Production Release v${{ github.run_number }}
           body: |
-            Production deployment of tutor-platform-auth
+            🚀 Production deployment of tutor-platform-auth
             
-            Docker Images:
+            Docker Images pushed to DigitalOcean Container Registry:
             - `registry.digitalocean.com/${{ secrets.DO_REGISTRY_NAME }}/tutor-platform-auth:v${{ github.run_number }}`
             - `registry.digitalocean.com/${{ secrets.DO_REGISTRY_NAME }}/tutor-platform-auth:latest`
+            - `registry.digitalocean.com/${{ secrets.DO_REGISTRY_NAME }}/tutor-platform-auth:production-${{ github.sha }}`
             
-            Commit: ${{ github.sha }}
+            Commit SHA: ${{ github.sha }}
+            Branch: production
           draft: false
           prerelease: false
