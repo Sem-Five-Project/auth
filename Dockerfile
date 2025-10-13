@@ -1,7 +1,5 @@
-# Multi-stage Dockerfile for Spring Boot Application
-
-# Stage 1: Build stage
-FROM ghcr.io/railwayapp/maven:3.9.6-eclipse-temurin-17 AS builder
+# Build stage
+FROM maven:3.9.7-eclipse-temurin-17 AS build
 
 WORKDIR /app
 
@@ -9,36 +7,33 @@ WORKDIR /app
 COPY pom.xml .
 RUN mvn dependency:go-offline -B
 
-# Copy source code and build
-COPY src ./src
-RUN mvn clean package -DskipTests -B
+# Copy source code
+COPY src src
 
-# Stage 2: Runtime stage
-FROM ghcr.io/railwayapp/eclipse-temurin:17-jdk-jammy
+# Build the application
+RUN mvn clean package -DskipTests
+
+# Runtime stage
+FROM eclipse-temurin:17-jre-focal
 
 WORKDIR /app
 
+# Install curl for health checks
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
 # Create non-root user for security
-RUN groupadd -r springboot && useradd -r -g springboot springboot
+RUN addgroup --system spring && adduser --system spring --ingroup spring
+USER spring:spring
 
-# Install curl + netcat for health checks & wait-for-db
-RUN apt-get update && apt-get install -y curl netcat && rm -rf /var/lib/apt/lists/*
+# Copy the built JAR file
+COPY --from=build /app/target/*.jar app.jar
 
-# Copy JAR from build stage
-COPY --from=builder /app/target/*.jar app.jar
+# Expose port 8083 (matches local Spring Boot configuration)
+EXPOSE 8083
 
-# Add wait-for-db script
-COPY wait-for-db.sh .
-RUN chmod +x wait-for-db.sh
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:8083/api/actuator/health || exit 1
 
-# Change ownership
-RUN chown springboot:springboot app.jar wait-for-db.sh
-
-# Switch to non-root user
-USER springboot
-
-# Expose port
-EXPOSE 8080
-
-# Start application with DB wait logic
-ENTRYPOINT ["./wait-for-db.sh"]
+# Run the application with optimized JVM settings
+ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=70.0", "-jar", "app.jar"]
