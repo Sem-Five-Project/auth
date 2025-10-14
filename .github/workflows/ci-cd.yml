@@ -78,24 +78,3 @@ jobs:
           docker push registry.digitalocean.com/${{ secrets.DO_REGISTRY_NAME }}/tutor-platform-auth:v${{ github.run_number }}
           docker push registry.digitalocean.com/${{ secrets.DO_REGISTRY_NAME }}/tutor-platform-auth:latest
           docker push registry.digitalocean.com/${{ secrets.DO_REGISTRY_NAME }}/tutor-platform-auth:production-${{ github.sha }}
-
-      - name: Create GitHub Release
-        if: github.event_name == 'push'
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: v${{ github.run_number }}
-          release_name: Production Release v${{ github.run_number }}
-          body: |
-            🚀 Production deployment of tutor-platform-auth
-            
-            Docker Images pushed to DigitalOcean Container Registry:
-            - `registry.digitalocean.com/${{ secrets.DO_REGISTRY_NAME }}/tutor-platform-auth:v${{ github.run_number }}`
-            - `registry.digitalocean.com/${{ secrets.DO_REGISTRY_NAME }}/tutor-platform-auth:latest`
-            - `registry.digitalocean.com/${{ secrets.DO_REGISTRY_NAME }}/tutor-platform-auth:production-${{ github.sha }}`
-            
-            Commit SHA: ${{ github.sha }}
-            Branch: production
-          draft: false
-          prerelease: false
