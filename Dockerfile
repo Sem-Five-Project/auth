@@ -18,12 +18,13 @@ FROM eclipse-temurin:17-jre-focal
 
 WORKDIR /app
 
-# Install curl for health checks and ca-certificates for SSL
-RUN apt-get update && apt-get install -y curl ca-certificates && rm -rf /var/lib/apt/lists/*
+# Install diagnostic tools (curl, dnsutils, traceroute, and ping)
+RUN apt-get update && apt-get install -y curl dnsutils traceroute iputils-ping && rm -rf /var/lib/apt/lists/*
 
-# Create non-root user for security
-RUN addgroup --system spring && adduser --system spring --ingroup spring
-USER spring:spring
+# --- TEMPORARY DEBUGGING STEP ---
+# The next two lines are commented out so we can run as root in the console.
+# RUN addgroup --system spring && adduser --system spring --ingroup spring
+# USER spring:spring
 
 # Copy the built JAR file
 COPY --from=build /app/target/*.jar app.jar
