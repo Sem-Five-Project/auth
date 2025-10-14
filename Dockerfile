@@ -18,8 +18,8 @@ FROM eclipse-temurin:17-jre-focal
 
 WORKDIR /app
 
-# Install curl for health checks
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+# Install curl for health checks and ca-certificates for SSL
+RUN apt-get update && apt-get install -y curl ca-certificates && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user for security
 RUN addgroup --system spring && adduser --system spring --ingroup spring
