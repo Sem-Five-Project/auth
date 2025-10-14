@@ -10,6 +10,7 @@ import java.util.Map;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,6 +39,9 @@ class PaymentServiceTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Value("${payhere.merchant-secret}")
+    private String merchantSecret;
 
     @Test
     @Transactional
@@ -85,7 +89,7 @@ class PaymentServiceTest {
 
     private Map<String, String> buildSuccessfulPayload(String orderId, String amount, String currency, String statusCode, String paymentId) {
         Map<String, String> payload = new HashMap<>();
-        payload.put("merchant_id", "test1231565");
+        payload.put("merchant_id", "TEST_ID");
         payload.put("order_id", orderId);
         payload.put("payhere_amount", amount);
         payload.put("payhere_currency", currency);
@@ -94,7 +98,6 @@ class PaymentServiceTest {
         payload.put("payment_method", "VISA");
         payload.put("card_holder_name", "Test User");
 
-        String merchantSecret = "testMerchantSecret12345";
         String md5Secret = DigestUtils.md5Hex(merchantSecret).toUpperCase();
         String hashInput = payload.get("merchant_id") + orderId + amount + currency + statusCode + md5Secret;
         String signature = DigestUtils.md5Hex(hashInput).toUpperCase();
