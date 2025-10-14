@@ -12,6 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -26,6 +28,13 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final SlotInstanceRepository slotInstanceRepository;
     //private final BookingValidationService validationService;
+
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    public boolean isMonthPaid(Integer studentId, Integer classId, Integer month, Integer year) {
+        return bookingRepository.isMonthPaid(studentId, classId, month, year);
+    }
 
 
     /**
@@ -205,6 +214,38 @@ public class BookingService {
         return bookings.stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Calls DB function get_student_class_slots_with_rate(p_student_id, p_class_id)
+     * and wraps the JSON into { "get_student_class_slots_with_rate": { ... } }.
+     */
+    @Transactional(readOnly = true)
+    public java.util.Map<String, Object> getStudentClassSlotsWithRate(Long studentId, Long classId) {
+        Object dbResult = entityManager
+                .createNativeQuery("SELECT get_student_class_slots_with_rate(:p_student_id, :p_class_id)")
+                .setParameter("p_student_id", studentId)
+                .setParameter("p_class_id", classId)
+                .getSingleResult();
+
+        String json = dbResult != null ? dbResult.toString() : "{}";
+        java.util.Map<String, Object> inner;
+        try {
+            @SuppressWarnings("unchecked")
+            java.util.Map<String, Object> parsed = new com.fasterxml.jackson.databind.ObjectMapper()
+                    .readValue(json, java.util.Map.class);
+            inner = parsed != null ? parsed : java.util.Map.of();
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            inner = java.util.Map.of(
+                "success", false,
+                "message", "Invalid JSON returned from get_student_class_slots_with_rate",
+                "raw", json
+            );
+        }
+
+        java.util.Map<String, Object> wrapper = new java.util.LinkedHashMap<>();
+        wrapper.put("get_student_class_slots_with_rate", inner);
+        return wrapper;
     }
 
     /**
