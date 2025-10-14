@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - develop
+      - production
   push:
     branches:
       - main
@@ -39,7 +40,7 @@ jobs:
         env:
           SPRING_DATASOURCE_URL: jdbc:h2:mem:testdb
           SPRING_DATASOURCE_USERNAME: sa
-          SPRING_DATASOURCE_PASSWORD: 
+          SPRING_DATASOURCE_PASSWORD:
           SPRING_JPA_HIBERNATE_DDL_AUTO: create-drop
 
       - name: Upload test results
@@ -53,7 +54,9 @@ jobs:
     name: Build and Push Production Image to DigitalOcean
     needs: test
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/production'
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/production') ||
+      (github.event_name == 'pull_request' && github.base_ref == 'production' && github.event.pull_request.merged == true)
 
     steps:
       - name: Checkout code
