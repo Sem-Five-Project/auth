@@ -98,4 +98,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
        // Call DB function get_student_bookings returning a single JSON array string
        @Query(value = "SELECT COALESCE(jsonb_agg(row_to_json(t)), '[]'::jsonb)::text FROM public.get_student_bookings(:studentId) t", nativeQuery = true)
        String findStudentBookingsJson(@Param("studentId") Long studentId);
+
+    // Check if a student's month is paid (native query to Supabase function)
+    @Query(value = "SELECT is_month_paid(:studentId, :classId, :month, :year)", nativeQuery = true)
+    boolean isMonthPaid(@Param("studentId") Integer studentId, @Param("classId") Integer classId, @Param("month") Integer month, @Param("year") Integer year);
 }

@@ -2,7 +2,6 @@ package com.edu.tutor_platform.booking.controller;
 
 import com.edu.tutor_platform.booking.dto.MonthlyRecurringSlotsRespondDTO;
 import com.edu.tutor_platform.booking.dto.NextMonthSlotRequestDTO;
-import com.edu.tutor_platform.booking.dto.NextMonthSlotRespondDTO;
 import com.edu.tutor_platform.booking.dto.NextMonthSlotsView;
 import com.edu.tutor_platform.booking.dto.SlotInstanceDTO;
 import com.edu.tutor_platform.booking.dto.SlotSearchRequestDTO;
@@ -26,6 +25,16 @@ public class StudentBookingController {
 
     private final SlotManagementService slotManagementService;
     private final BookingService bookingService;
+
+    @GetMapping("/is-paid")
+    public ResponseEntity<java.util.Map<String, Boolean>> isMonthPaid(
+            @RequestParam("studentId") Integer studentId,
+            @RequestParam("classId") Integer classId,
+            @RequestParam("month") Integer month,
+            @RequestParam("year") Integer year) {
+        boolean isPaid = bookingService.isMonthPaid(studentId, classId, month, year);
+        return ResponseEntity.ok(java.util.Map.of("isPaid", isPaid));
+    }
 
     /**
      * Search for available slots
@@ -194,6 +203,29 @@ System.out.println("Recurring only filter1: " + recurring);
                     payload.addAll(view.getSlots());
                 }
                 return ResponseEntity.ok(payload);
+        } catch (IllegalArgumentException iae) {
+            return ResponseEntity.badRequest().body(java.util.Map.of(
+                    "error", "BAD_REQUEST",
+                    "message", iae.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(java.util.Map.of(
+                    "error", "INTERNAL_SERVER_ERROR",
+                    "message", e.getMessage()));
+        }
+    }
+
+    /**
+     * Get reserved slots for a student's class, with hourly rate and availability grouping.
+     * Returns wrapper: { "get_student_class_slots_with_rate": { hourly_rate, all_slot_ids, availability_details } }
+     * Example: /student/bookings/getreservedslots?studentId=49&classId=123
+     */
+    @GetMapping("/getreservedslots")
+    public ResponseEntity<?> getReservedSlots(
+            @RequestParam("studentId") Long studentId,
+            @RequestParam("classId") Long classId) {
+        try {
+            var payload = bookingService.getStudentClassSlotsWithRate(studentId, classId);
+            return ResponseEntity.ok(payload);
         } catch (IllegalArgumentException iae) {
             return ResponseEntity.badRequest().body(java.util.Map.of(
                     "error", "BAD_REQUEST",
