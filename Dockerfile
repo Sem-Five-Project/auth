@@ -18,12 +18,13 @@ FROM eclipse-temurin:17-jre-focal
 
 WORKDIR /app
 
-# Install curl for health checks
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+# Install diagnostic tools (curl, dnsutils, traceroute, and ping)
+RUN apt-get update && apt-get install -y curl dnsutils traceroute iputils-ping && rm -rf /var/lib/apt/lists/*
 
-# Create non-root user for security
-RUN addgroup --system spring && adduser --system spring --ingroup spring
-USER spring:spring
+# --- TEMPORARY DEBUGGING STEP ---
+# The next two lines are commented out so we can run as root in the console.
+# RUN addgroup --system spring && adduser --system spring --ingroup spring
+# USER spring:spring
 
 # Copy the built JAR file
 COPY --from=build /app/target/*.jar app.jar
@@ -36,4 +37,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:8083/api/actuator/health || exit 1
 
 # Run the application with optimized JVM settings
-ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=70.0", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-Djava.net.preferIPv4Stack=true", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=70.0", "-jar", "app.jar"]
