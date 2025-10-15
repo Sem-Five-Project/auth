@@ -83,7 +83,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("auth")
-@CrossOrigin(origins = {"http://localhost:5173"}, allowCredentials = "true")
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000", "https://edimy-front-end.vercel.app"}, allowCredentials = "true")
 public class AuthController {
     
     private String getClientIpAddress(HttpServletRequest request) {
@@ -304,5 +304,3 @@ public class AuthController {
 
 
 }
-
-
