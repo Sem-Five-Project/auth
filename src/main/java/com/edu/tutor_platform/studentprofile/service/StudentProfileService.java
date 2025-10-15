@@ -155,9 +155,9 @@ public class StudentProfileService {
                                                    String status, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         Page<StudentProfile> studentProfiles = studentProfileRepository.searchByAdmin(
-                name != null ? name : "",
-                username != null ? username : "",
-                email != null ? email : "",
+                name,
+                username,
+                email,
                 studentId,
                 status != null ? StudentProfileStatus.valueOf(status) : null,
                 pageable);

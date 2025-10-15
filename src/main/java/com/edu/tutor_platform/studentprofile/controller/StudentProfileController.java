@@ -73,7 +73,7 @@ public class StudentProfileController {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
-    @GetMapping("/searchByAdmin")
+    @GetMapping("/admin/search")
     public ResponseEntity<List<StudentsDto>> searchStudentsByAdmin(
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String username,
