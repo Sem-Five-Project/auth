@@ -18,6 +18,10 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.edu.tutor_platform.session.repository.SessionRepository;
+import com.edu.tutor_platform.clazz.repository.ClassDocRepository;
+import com.edu.tutor_platform.session.entity.Session;
+import com.edu.tutor_platform.clazz.entity.ClassDoc;
 
 @RestController
 @RequestMapping("/students")
@@ -26,6 +30,9 @@ import java.util.Map;
 public class StudentProfileController {
 
     private final StudentProfileService studentProfileService;
+    private final com.edu.tutor_platform.clazz.service.ParticipantsService participantsService;
+    private final SessionRepository sessionRepository;
+    private final ClassDocRepository classDocRepository;
 
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("")
@@ -45,8 +52,10 @@ public class StudentProfileController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}/admin")
-    public ResponseEntity<StudentDtoForAdmin> updateStudentByIdForAdmin(@PathVariable String id, @RequestBody StudentDtoForAdmin studentDtoForAdmin) {
-        StudentDtoForAdmin student = studentProfileService.updateStudentDetailsByIdForAdmin(Long.parseLong(id), studentDtoForAdmin);
+    public ResponseEntity<StudentDtoForAdmin> updateStudentByIdForAdmin(@PathVariable String id,
+            @RequestBody StudentDtoForAdmin studentDtoForAdmin) {
+        StudentDtoForAdmin student = studentProfileService.updateStudentDetailsByIdForAdmin(Long.parseLong(id),
+                studentDtoForAdmin);
         return ResponseEntity.ok(student);
     }
 
@@ -64,7 +73,7 @@ public class StudentProfileController {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
-    @GetMapping("/searchByAdmin")
+    @GetMapping("/admin/search")
     public ResponseEntity<List<StudentsDto>> searchStudentsByAdmin(
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String username,
@@ -74,8 +83,7 @@ public class StudentProfileController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         List<StudentsDto> students = studentProfileService.searchStudentsByAdmin(
-                name, username, email, studentId, status, page, size
-        );
+                name, username, email, studentId, status, page, size);
         return ResponseEntity.ok(students);
     }
 
@@ -163,7 +171,8 @@ public class StudentProfileController {
             @RequestBody StudentProfileResponse updateRequest) {
         log.info("Updating student profile for ID: {}", studentId);
         try {
-            StudentProfileResponse updatedProfile = studentProfileService.updateStudentProfile(studentId, updateRequest);
+            StudentProfileResponse updatedProfile = studentProfileService.updateStudentProfile(studentId,
+                    updateRequest);
             log.info("Successfully updated student profile: {}", studentId);
             return ResponseEntity.ok(updatedProfile);
         } catch (RuntimeException e) {
@@ -272,15 +281,41 @@ public class StudentProfileController {
                     .body(Map.of(
                             "error", "NOT_FOUND",
                             "message", rse.getReason(),
-                            "studentId", studentId
-                    ));
+                            "studentId", studentId));
         } catch (RuntimeException e) {
             log.error("Unexpected error fetching payment history for {}: {}", studentId, e.getMessage());
             return ResponseEntity.internalServerError()
                     .body(Map.of(
                             "error", "INTERNAL_ERROR",
-                            "message", e.getMessage()
-                    ));
+                            "message", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/me/classes")
+    public ResponseEntity<?> getMyClasses(org.springframework.security.core.Authentication authentication) {
+        try {
+            if (authentication == null) {
+                return ResponseEntity.status(401).body(Map.of("error", "User not authenticated"));
+            }
+            com.edu.tutor_platform.user.entity.User user = (com.edu.tutor_platform.user.entity.User) authentication
+                    .getPrincipal();
+            var studentProfile = studentProfileService.getStudentProfileByUserId(user.getId());
+            Long studentId = studentProfile.getStudentId();
+
+            var classes = participantsService.findClassesByStudentId(studentId);
+            var dtos = classes.stream().map(c -> {
+                // Get session for this class (assuming one session per class)
+                Session session = sessionRepository.findById(c.getClassId()).orElse(null);
+                String linkForMeeting = session != null ? session.getLinkForMeeting() : null;
+                // Get docs for this class
+                List<ClassDoc> docs = classDocRepository.findByClassId(c.getClassId());
+                return new com.edu.tutor_platform.studentprofile.dto.StudentClassDto(
+                        c.getClassId(), c.getClassName(), c.getTutorId(), c.getSubjectId(), c.getDate(),
+                        c.getStartTime(), c.getEndTime(), c.getComment(), linkForMeeting, docs);
+            }).toList();
+            return ResponseEntity.ok(Map.of("classes", dtos));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
         }
     }
 }

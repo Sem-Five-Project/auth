@@ -8,12 +8,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-
 @Entity
-@Table(
-        name = "participants",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"class_id", "student_id"})
-)
+@Table(name = "participants", uniqueConstraints = @UniqueConstraint(columnNames = { "class_id", "student_id" }))
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -34,7 +30,7 @@ public class Participants {
     private StudentProfile student;
 
     @Column(name = "payment_id")
-    private Integer paymentId;
+    private String paymentId;
 
     // @ManyToOne
     // @JoinColumn(name = "session_id", nullable = false)
