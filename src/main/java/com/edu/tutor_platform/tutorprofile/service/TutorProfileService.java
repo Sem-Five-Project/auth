@@ -90,6 +90,7 @@ public class TutorProfileService {
     public TutorDto getTutorDetailsById(long l) {
         TutorProfile tutor = tutorProfileRepository.findById(l)
                 .orElseThrow(() -> new TutorNotFoundException("Tutor not found with id: " + l));
+
         TutorDto dto = new TutorDto();
         dto.setTutorId(tutor.getTutorId());
         dto.setUserId(tutor.getUser().getId());
@@ -100,7 +101,19 @@ public class TutorProfileService {
         dto.setProfilePictureUrl(tutor.getUser().getProfileImage());
         dto.setBio(tutor.getBio());
         dto.setHourlyRate(tutor.getHourlyRate());
-        dto.setSubjects(tutor.getTutorSubjects());
+
+        // ✅ Convert TutorSubject → TutorSubjectDto
+        dto.setSubjects(
+                tutor.getTutorSubjects().stream()
+                        .map(ts -> TutorSubjectDto.builder()
+                                .id(ts.getId())
+                                .subjectName(ts.getSubject().getName())
+                                .hourlyRate(ts.getHourlyRate())
+                                .verification(ts.getVerification() != null ? ts.getVerification().name() : null)
+                                .build())
+                        .toList()
+        );
+
         dto.setStatus(tutor.getStatus());
         dto.setVerified(tutor.isVerified());
         dto.setAccountLocked(!tutor.getUser().isAccountNonLocked());
@@ -113,6 +126,7 @@ public class TutorProfileService {
         dto.setUpdatedAt(tutor.getUser().getUpdatedAt());
         return dto;
     }
+
 
     public List<TutorsDto> searchTutorsByAdmin(String name, String username, String email,
             Long tutorId, String status,
