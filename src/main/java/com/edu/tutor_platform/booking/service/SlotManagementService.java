@@ -3,6 +3,7 @@ package com.edu.tutor_platform.booking.service;
 import com.edu.tutor_platform.booking.dto.MonthlyRecurringSlotsRespondDTO;
 import com.edu.tutor_platform.booking.dto.NextMonthSlotRespondDTO;
 import com.edu.tutor_platform.booking.dto.NextMonthSlotRequestDTO;
+import com.edu.tutor_platform.booking.dto.NextMonthSlotsView;
 import com.edu.tutor_platform.booking.dto.SlotInstanceDTO;
 import com.edu.tutor_platform.booking.dto.SlotLockResponseDTO;
 import com.edu.tutor_platform.booking.dto.SlotSearchRequestDTO;
@@ -26,10 +27,13 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import com.edu.tutor_platform.booking.dto.CheckClassExistRequestDTO;
 import com.edu.tutor_platform.booking.dto.CheckClassExistResponseDTO;
 import java.util.Set;
+import java.util.Map;
 import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
@@ -48,15 +52,15 @@ public class SlotManagementService {
     //@Transactional
     // public TutorAvailabilityDTO createOrUpdateAvailability(TutorAvailabilityDTO dto) {
     //     log.info("Creating/updating availability for tutor: {}", dto.getTutorId());
-
+        
     //     // Validate the availability DTO
     //     validationService.validateTutorAvailability(dto);
-
+        
     //     // Validate recurring settings if applicable
     //     if (dto.getRecurring() != null && dto.getRecurring()) {
     //         validationService.validateRecurringSettings(dto);
     //     }
-
+        
     //     // Validate tutor exists
     //     TutorProfile tutorProfile = tutorProfileRepository.findById(dto.getTutorId())
     //             .orElseThrow(() -> new RuntimeException("Tutor not found"));
@@ -89,7 +93,7 @@ public class SlotManagementService {
 
     //     return convertToDTO(availability);
     // }
-    public List<SlotInstanceDTO> findMonthlyRecurringSlots(Long tutorId, DayOfWeek weekday, int month, int year) {
+ public List<SlotInstanceDTO> findMonthlyRecurringSlots(Long tutorId, DayOfWeek weekday, int month, int year) {
         LocalDate start = LocalDate.of(year, month, 1);
         LocalDate end = start.withDayOfMonth(start.lengthOfMonth());
         List<SlotInstance> slots = slotInstanceRepository.findRecurringSlotsInMonth(tutorId, weekday, start, end);
@@ -111,14 +115,14 @@ public class SlotManagementService {
     @Transactional
     public void generateRecurringSlots(TutorAvailability availability) {
         if (!availability.getRecurring()) {
-            log.warn("Attempting to generate recurring slots for non-recurring availability: {}",
+            log.warn("Attempting to generate recurring slots for non-recurring availability: {}", 
                     availability.getAvailabilityId());
             return;
         }
 
         LocalDate today = LocalDate.now();
         LocalDate endDate = today.plusWeeks(8); // Generate 8 weeks ahead
-
+        
         generateSlotsForDateRange(availability, today, endDate);
     }
     @Transactional
@@ -169,7 +173,7 @@ public class SlotManagementService {
 
         return SlotLockResponseDTO.builder().success(true).failedSlots(List.of()).build();
     }
-
+    
     @Transactional
     public SlotLockResponseDTO releaseSlotsForCheckout(List<Long> slotIds) {
         if (slotIds == null || slotIds.isEmpty()) {
@@ -215,7 +219,7 @@ public class SlotManagementService {
     public void generateSlotsForNextTwoWeeks(TutorAvailability availability) {
         LocalDate today = LocalDate.now();
         LocalDate endDate = today.plusWeeks(2);
-
+        
         generateSlotsForDateRange(availability, today, endDate);
     }
 
@@ -224,7 +228,7 @@ public class SlotManagementService {
      */
     private void generateSlotsForDateRange(TutorAvailability availability, LocalDate startDate, LocalDate endDate) {
         DayOfWeek targetDayOfWeek = availability.getDayOfWeek();
-
+        
         // Find the first occurrence of the target day of week
         LocalDate currentDate = startDate;
         while (currentDate.getDayOfWeek() != java.time.DayOfWeek.valueOf(targetDayOfWeek.name())) {
@@ -239,18 +243,18 @@ public class SlotManagementService {
             // Check if slot already exists for this date
             if (!slotInstanceRepository.existsByTutorAvailabilityAvailabilityIdAndSlotDate(
                     availability.getAvailabilityId(), currentDate)) {
-
+                
                 SlotInstance slotInstance = SlotInstance.builder()
                         .tutorAvailability(availability)
                         .slotDate(currentDate)
                         .status(SlotStatus.AVAILABLE)
                         .build();
-
+                
                 slotInstanceRepository.save(slotInstance);
-                log.debug("Generated slot for tutor {} on {}",
-                        availability.getTutorProfile().getTutorId(), currentDate);
+                log.debug("Generated slot for tutor {} on {}", 
+                         availability.getTutorProfile().getTutorId(), currentDate);
             }
-
+            
             currentDate = currentDate.plusWeeks(1); // Move to next week
         }
     }
@@ -260,20 +264,20 @@ public class SlotManagementService {
      */
     // public List<TutorAvailabilityDTO> getTutorAvailability(Long tutorId) {
     //     List<TutorAvailability> availabilities = tutorAvailabilityRepository
-    //             .findByTutorProfileTutorId(tutorId);
+    //             .findByTutorProfileTutorId(tutorId);    
     //     return availabilities.stream()
     //             .map(this::convertToDTO)
     //             .collect(Collectors.toList());
     // }
-    //ok
+   //ok
     public List<SlotInstanceDTO>searchAvailableSlots(SlotSearchRequestDTO searchRequest) {
         List<SlotInstance> slots = new ArrayList<>();
 
         if (searchRequest.getTutorId() != null) {
             if (searchRequest.getSpecificDate() != null) {
                 slots = slotInstanceRepository.findByTutorIdAndDateAndStatus(
-                        searchRequest.getTutorId(),
-                        searchRequest.getSpecificDate(),
+                        searchRequest.getTutorId(), 
+                        searchRequest.getSpecificDate(), 
                         SlotStatus.AVAILABLE
                 );
                 log.debug("Found {} available slots for tutor {} on {}", slots.size(), searchRequest.getTutorId(), searchRequest.getSpecificDate());
@@ -308,30 +312,30 @@ public class SlotManagementService {
 
     //     // Delete all slot instances first
     //     slotInstanceRepository.deleteByTutorAvailabilityAvailabilityId(availabilityId);
-
+        
     //     // Delete availability
     //     tutorAvailabilityRepository.delete(availability);
-
+        
     //     log.info("Deleted availability {} and all associated slot instances", availabilityId);
     // }
 
     /**
      * Weekly recurring slot generation (called by scheduled task)
      */
-
+    
     // public void generateWeeklyRecurringSlots() {
     //     log.info("Starting weekly recurring slot generation");
-
+        
     //     List<TutorAvailability> recurringAvailabilities = tutorAvailabilityRepository.findByRecurringTrue();
-
+        
     //     LocalDate nextWeekStart = LocalDate.now().plusWeeks(8); // Generate 8 weeks ahead
     //     LocalDate nextWeekEnd = nextWeekStart.plusDays(6);
-
+        
     //     for (TutorAvailability availability : recurringAvailabilities) {
     //         generateSlotsForDateRange(availability, nextWeekStart, nextWeekEnd);
     //     }
-
-    //     log.info("Completed weekly recurring slot generation for {} availabilities",
+        
+    //     log.info("Completed weekly recurring slot generation for {} availabilities", 
     //             recurringAvailabilities.size());
     // }
 
@@ -340,7 +344,7 @@ public class SlotManagementService {
      * Update availability entity from DTO
      */
     @Transactional
-    private void updateAvailabilityFromDTO(TutorAvailability availability, TutorAvailabilityDTO dto) {
+    protected void updateAvailabilityFromDTO(TutorAvailability availability, TutorAvailabilityDTO dto) {
         availability.setDayOfWeek(dto.getDayOfWeek());
         availability.setStartTime(dto.getStartTime());
         availability.setEndTime(dto.getEndTime());
@@ -385,7 +389,7 @@ public class SlotManagementService {
 
 
 
-    public List<MonthlyRecurringSlotsRespondDTO> getRecurringSlots(
+  public List<MonthlyRecurringSlotsRespondDTO> getRecurringSlots(
             Long tutorId, String weekday, Integer month, Integer year) {
 
         if (tutorId == null) throw new IllegalArgumentException("tutorId is required");
@@ -463,7 +467,7 @@ public class SlotManagementService {
      * [ { "availability_id":1, "start_time":"09:00:00", "end_time":"10:00:00", "available_dates":["2025-10-02", ...] }, ... ]
      * Sometimes it can be wrapped: {"get_next_month_slots":[ ... ]}
      */
-    public List<NextMonthSlotRespondDTO> getNextMonthSlots(NextMonthSlotRequestDTO request) {
+   public NextMonthSlotsView getNextMonthSlots(NextMonthSlotRequestDTO request) {
         if (request.getAvailabilityIds() == null || request.getAvailabilityIds().isEmpty()) {
             throw new IllegalArgumentException("availabilityIds required");
         }
@@ -483,36 +487,102 @@ public class SlotManagementService {
         log.debug("get_next_month_slots raw JSON: {}", json);
 
         List<NextMonthSlotRespondDTO> result = new java.util.ArrayList<>();
-        if (json == null || json.isBlank()) return result;
+        java.util.LinkedHashSet<Long> allIds = new java.util.LinkedHashSet<>();
+        if (json == null || json.isBlank()) {
+            return NextMonthSlotsView.builder()
+                    .allSlotIds(new java.util.ArrayList<>(allIds))
+                    .slots(result)
+                    .build();
+        }
 
         try {
             ObjectMapper mapper = new ObjectMapper();
             JsonNode root = mapper.readTree(json);
 
-            // Function returns an array OR wrapped like [{ "get_next_month_slots": [ ... ] }]
-            JsonNode payload = root;
-            if (root.isArray() && root.size() == 1 && root.get(0).has("get_next_month_slots")) {
-                payload = root.get(0).get("get_next_month_slots");
-            } else if (root.isObject() && root.has("get_next_month_slots")) {
-                payload = root.get("get_next_month_slots");
+            // Collect any all_slot_ids anywhere in the payload (e.g., wrapper objects)
+            collectAllSlotIds(root, allIds);
+
+            List<JsonNode> slotNodes = new ArrayList<>();
+            collectNextMonthSlotNodes(root, slotNodes);
+
+            if (slotNodes.isEmpty()) {
+                log.warn("No slot groups found in get_next_month_slots payload: {}", root);
+                return NextMonthSlotsView.builder()
+                        .allSlotIds(new java.util.ArrayList<>(allIds))
+                        .slots(result)
+                        .build();
             }
 
-            if (!payload.isArray()) {
-                log.warn("Unexpected shape for next month slots JSON: {}", root);
-                return result;
-            }
-
-            for (JsonNode node : payload) {
+            for (JsonNode node : slotNodes) {
                 Long availabilityId = node.hasNonNull("availability_id") ? node.get("availability_id").asLong() : null;
                 String startTime = node.hasNonNull("start_time") ? node.get("start_time").asText() : null;
                 String endTime = node.hasNonNull("end_time") ? node.get("end_time").asText() : null;
                 String weekDay = node.hasNonNull("week_day") ? node.get("week_day").asText() : null;
 
-                List<String> dates = new java.util.ArrayList<>();
+                LinkedHashSet<String> dateSet = new LinkedHashSet<>();
                 JsonNode arr = node.get("available_dates");
                 if (arr != null && arr.isArray()) {
                     for (JsonNode d : arr) {
-                        dates.add(d.asText());
+                        if (d != null && !d.isNull()) {
+                            dateSet.add(d.asText());
+                        }
+                    }
+                }
+
+                // collect any provided all_slot_ids at node level
+                JsonNode idsNode = node.get("all_slot_ids");
+                if (idsNode != null && idsNode.isArray()) {
+                    for (JsonNode idNode : idsNode) {
+                        if (idNode == null || idNode.isNull()) continue;
+                        if (idNode.canConvertToLong()) {
+                            allIds.add(idNode.asLong());
+                        } else if (idNode.isTextual()) {
+                            try {
+                                allIds.add(Long.parseLong(idNode.asText()));
+                            } catch (NumberFormatException ignored) {
+                                log.debug("Skipping non-numeric slot id {}", idNode);
+                            }
+                        }
+                    }
+                }
+
+                // details array might contain slot_id/slot_date; use it to enrich dates and ids
+                JsonNode detailsNode = node.has("get_next_month_slotss")
+                        ? node.get("get_next_month_slotss")
+                        : node.get("slots");
+                if (detailsNode != null && detailsNode.isArray()) {
+                    for (JsonNode detailNode : detailsNode) {
+                        if (detailNode == null || detailNode.isNull()) continue;
+
+                        Long slotId = detailNode.hasNonNull("slot_id") ? detailNode.get("slot_id").asLong() : null;
+                        if (slotId != null) {
+                            allIds.add(slotId);
+                        }
+
+                        String rawDate = null;
+                        if (detailNode.hasNonNull("slot_date")) {
+                            rawDate = detailNode.get("slot_date").asText();
+                        } else if (detailNode.hasNonNull("date")) {
+                            rawDate = detailNode.get("date").asText();
+                        }
+
+                        java.time.LocalDate slotDate = null;
+                        if (rawDate != null && !rawDate.isBlank()) {
+                            try {
+                                slotDate = java.time.LocalDate.parse(rawDate);
+                            } catch (Exception ex) {
+                                if (rawDate.length() >= 10) {
+                                    try {
+                                        slotDate = java.time.LocalDate.parse(rawDate.substring(0, 10));
+                                    } catch (Exception ignored) {
+                                        log.debug("Unparseable slot_date: {}", rawDate);
+                                    }
+                                }
+                            }
+                            if (slotDate != null) {
+                                dateSet.add(slotDate.toString());
+                            }
+                        }
                     }
                 }
 
@@ -521,24 +591,27 @@ public class SlotManagementService {
                         .startTime(startTime != null ? java.time.LocalTime.parse(startTime) : null)
                         .endTime(endTime != null ? java.time.LocalTime.parse(endTime) : null)
                         .weekDay(weekDay)
-                        .availableDates(dates)
+                        .availableDates(new ArrayList<>(dateSet))
                         .build());
             }
 
         } catch (Exception e) {
             log.error("Failed parsing get_next_month_slots JSON", e);
         }
-        return result;
+        return NextMonthSlotsView.builder()
+                .allSlotIds(new java.util.ArrayList<>(allIds))
+                .slots(result)
+                .build();
     }
     private SlotInstanceDTO convertSlotToDTO(SlotInstance slot) {
         TutorProfile tutorProfile = slot.getTutorAvailability().getTutorProfile();
-
+        
         return SlotInstanceDTO.builder()
                 .slotId(slot.getSlotId())
                 .availabilityId(slot.getTutorAvailability().getAvailabilityId())
                 .tutorId(tutorProfile.getTutorId())
-                .tutorName(tutorProfile.getUser().getFirstName() + " " +
-                        tutorProfile.getUser().getLastName())
+                .tutorName(tutorProfile.getUser().getFirstName() + " " + 
+                          tutorProfile.getUser().getLastName())
                 .slotDate(slot.getSlotDate())
                 .dayOfWeek(DayOfWeek.valueOf(slot.getSlotDate().getDayOfWeek().name()))
                 .startTime(slot.getTutorAvailability().getStartTime())
@@ -599,6 +672,90 @@ public class SlotManagementService {
         } catch (Exception e) {
             log.error("Failed to parse check_class_exist JSON", e);
             return CheckClassExistResponseDTO.builder().exists(false).build();
+        }
+    }
+
+    private void collectAllSlotIds(JsonNode node, java.util.LinkedHashSet<Long> sink) {
+        if (node == null || node.isNull()) {
+            return;
+        }
+
+        if (node.isArray()) {
+            for (JsonNode child : node) {
+                collectAllSlotIds(child, sink);
+            }
+            return;
+        }
+
+        if (node.isObject()) {
+            JsonNode ids = node.get("all_slot_ids");
+            if (ids != null && ids.isArray()) {
+                for (JsonNode idNode : ids) {
+                    if (idNode == null || idNode.isNull()) continue;
+                    if (idNode.canConvertToLong()) {
+                        sink.add(idNode.asLong());
+                    } else if (idNode.isTextual()) {
+                        try {
+                            sink.add(Long.parseLong(idNode.asText()));
+                        } catch (NumberFormatException ignored) {
+                            // ignore
+                        }
+                    }
+                }
+            }
+
+            Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
+            while (fields.hasNext()) {
+                collectAllSlotIds(fields.next().getValue(), sink);
+            }
+        }
+    }
+
+    private void collectNextMonthSlotNodes(JsonNode node, List<JsonNode> sink) {
+        if (node == null || node.isNull()) {
+            return;
+        }
+
+        if (node.isArray()) {
+            for (JsonNode child : node) {
+                collectNextMonthSlotNodes(child, sink);
+            }
+            return;
+        }
+
+        if (node.isObject()) {
+            boolean isSlotGroup = node.hasNonNull("availability_id") &&
+                    (node.has("available_dates") || node.has("get_next_month_slotss") || node.has("slots") || node.has("all_slot_ids"));
+            if (isSlotGroup) {
+                sink.add(node);
+            }
+
+            Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
+            while (fields.hasNext()) {
+                collectNextMonthSlotNodes(fields.next().getValue(), sink);
+            }
+        }
+    }
+
+    private void collectAllSlotIds(JsonNode node, java.util.Set<Long> sink) {
+        if (node == null || node.isNull()) return;
+        if (node.isArray()) {
+            for (JsonNode child : node) collectAllSlotIds(child, sink);
+            return;
+        }
+        if (node.isObject()) {
+            JsonNode ids = node.get("all_slot_ids");
+            if (ids != null && ids.isArray()) {
+                for (JsonNode idNode : ids) {
+                    if (idNode == null || idNode.isNull()) continue;
+                    if (idNode.canConvertToLong()) sink.add(idNode.asLong());
+                    else if (idNode.isTextual()) {
+                        try { sink.add(Long.parseLong(idNode.asText())); } catch (NumberFormatException ignore) {}
+                    }
+                }
+            }
+            java.util.Iterator<java.util.Map.Entry<String, JsonNode>> it = node.fields();
+            while (it.hasNext()) collectAllSlotIds(it.next().getValue(), sink);
         }
     }
 }
@@ -879,4 +1036,3 @@ public class SlotManagementService {
 //                 .build();
 //     }
 // }
-

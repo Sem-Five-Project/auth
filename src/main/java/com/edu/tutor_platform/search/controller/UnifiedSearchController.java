@@ -11,7 +11,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/search")
-@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000"}, allowCredentials = "true")
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000", "https://edimy-front-end.vercel.app"}, allowCredentials = "true")
 @RequiredArgsConstructor
 public class UnifiedSearchController {
     

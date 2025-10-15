@@ -10,6 +10,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -24,46 +25,49 @@ import java.util.logging.Logger;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
-
+    
     private static final Logger logger = Logger.getLogger(JwtAuthenticationFilter.class.getName());
-
+    
     @Autowired
     private JwtUtil jwtUtil;
-
+    
     @Autowired
     private UserDetailsServiceImpl userDetailsService;
-
+    
     @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+    protected boolean shouldNotFilter(@NonNull HttpServletRequest request) throws ServletException {
         String path = request.getRequestURI();
         logger.info("Checking if JWT filter should be skipped for path: " + path);
-
-        // Skip JWT filter for these paths
-        boolean shouldSkip = path.startsWith("/api/actuator/") ||
+        
+        // Skip JWT filter for these specific public paths only
+    boolean shouldSkip = path.startsWith("/api/actuator/") ||
                 path.startsWith("/actuator/") ||
                 path.equals("/api/auth/login") ||
                 path.equals("/api/auth/register") ||
                 path.equals("/api/auth/refresh") ||
                 path.equals("/api/auth/check-username") ||
                 path.equals("/api/auth/rate-limit-status") ||
-                path.startsWith("/api/payment/notify");
-
-
+                // PayHere webhook should skip JWT auth
+                path.equals("/api/payment/payhere/notify") ||
+                path.equals("/payment/payhere/notify");
+        
         logger.info("Should skip JWT filter: " + shouldSkip);
         return shouldSkip;
     }
-
+    
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+    protected void doFilterInternal(@NonNull HttpServletRequest request,
+                                    @NonNull HttpServletResponse response,
+                                    @NonNull FilterChain filterChain)
             throws ServletException, IOException {
-
+        
         logger.info("Processing JWT authentication filter");
         final String authorizationHeader = request.getHeader("Authorization");
         logger.info("Authorization header: " + authorizationHeader);
-
+        
         String username = null;
         String jwt = null;
-
+        
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             jwt = authorizationHeader.substring(7);
             logger.info("JWT token extracted: " + jwt);
@@ -84,13 +88,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
         }
-
+        
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             logger.info("Username is not null and no authentication in context, loading user details");
             try {
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
                 logger.info("User details loaded: " + userDetails.getUsername());
-
+                
                 logger.info("Validating token for user: " + userDetails.getUsername());
                 if (jwtUtil.validateToken(jwt, userDetails)) {
                     logger.info("Token validation successful, setting authentication");
@@ -109,36 +113,36 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
         }
-
+        
         logger.info("Continuing filter chain");
         filterChain.doFilter(request, response);
         logger.info("Filter chain completed");
     }
-
+    
     private void sendTokenExpiredResponse(HttpServletResponse response) throws IOException {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json");
-
+        
         Map<String, Object> errorResponse = new HashMap<>();
         errorResponse.put("error", "TOKEN_EXPIRED");
         errorResponse.put("message", "Access token has expired. Please refresh your token.");
         errorResponse.put("statusCode", 401);
         errorResponse.put("timestamp", System.currentTimeMillis());
-
+        
         ObjectMapper mapper = new ObjectMapper();
         response.getWriter().write(mapper.writeValueAsString(errorResponse));
     }
-
+    
     private void sendInvalidTokenResponse(HttpServletResponse response) throws IOException {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json");
-
+        
         Map<String, Object> errorResponse = new HashMap<>();
         errorResponse.put("error", "INVALID_TOKEN");
         errorResponse.put("message", "Invalid or malformed token. Please login again.");
         errorResponse.put("statusCode", 401);
         errorResponse.put("timestamp", System.currentTimeMillis());
-
+        
         ObjectMapper mapper = new ObjectMapper();
         response.getWriter().write(mapper.writeValueAsString(errorResponse));
     }

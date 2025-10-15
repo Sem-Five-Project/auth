@@ -88,10 +88,18 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findExpiredUnconfirmedBookings(@Param("now") LocalDateTime now);
     
     // Find booking by order ID (for payment processing)
-    @Query("SELECT b FROM Booking b JOIN b.payment p WHERE p.orderId = :orderId")
+    @Query("SELECT b FROM Booking b WHERE b.orderId = :orderId")
     Optional<Booking> findByOrderId(@Param("orderId") String orderId);
     
     // Check if student has any pending payments
     @Query("SELECT COUNT(b) > 0 FROM Booking b WHERE b.studentProfile.studentId = :studentId AND b.isConfirmed = false AND b.lockedUntil > :now")
     Boolean hasActivePendingBookings(@Param("studentId") Long studentId, @Param("now") LocalDateTime now);
+
+       // Call DB function get_student_bookings returning a single JSON array string
+       @Query(value = "SELECT COALESCE(jsonb_agg(row_to_json(t)), '[]'::jsonb)::text FROM public.get_student_bookings(:studentId) t", nativeQuery = true)
+       String findStudentBookingsJson(@Param("studentId") Long studentId);
+
+    // Check if a student's month is paid (native query to Supabase function)
+    @Query(value = "SELECT is_month_paid(:studentId, :classId, :month, :year)", nativeQuery = true)
+    boolean isMonthPaid(@Param("studentId") Integer studentId, @Param("classId") Integer classId, @Param("month") Integer month, @Param("year") Integer year);
 }

@@ -74,6 +74,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -83,9 +85,9 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("auth")
-@CrossOrigin(origins = {"http://localhost:5173"}, allowCredentials = "true")
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000", "https://edimy-front-end.vercel.app"}, allowCredentials = "true")
 public class AuthController {
-    
+
     private String getClientIpAddress(HttpServletRequest request) {
         String ipAddress = request.getHeader("X-Forwarded-For");
         if (ipAddress == null || ipAddress.isEmpty() || "unknown".equalsIgnoreCase(ipAddress)) {
@@ -114,13 +116,16 @@ public class AuthController {
             String refreshTokenStr = authService.getRefreshTokenForUser(authResponse.getUser().getId());
             System.out.println("refreshTokenStr: " + refreshTokenStr);
 
-            // Set refresh token as HTTP-only cookie
-            Cookie refreshTokenCookie = new Cookie("refreshToken", refreshTokenStr);
-            refreshTokenCookie.setHttpOnly(true);
-            refreshTokenCookie.setSecure(true); // Set to true in production with HTTPS
-            refreshTokenCookie.setPath("/");
-            refreshTokenCookie.setMaxAge(30 * 24 * 60 * 60); // 30 days
-            response.addCookie(refreshTokenCookie);
+            // Set refresh token as HTTP-only cookie with Partitioned attribute for cross-site support
+            ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", refreshTokenStr)
+                    .httpOnly(true)
+                    .secure(true) // REQUIRED for Partitioned
+                    .path("/")
+                    .maxAge(30 * 24 * 60 * 60) // 30 days
+                    .sameSite("None") // REQUIRED for cross-site cookies
+                    .partitioned(true) // Enables CHIPS (Cookies Having Independent Partitioned State)
+                    .build();
+            response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
 
             return ResponseEntity.ok(authResponse);
         } catch (Exception e) {
@@ -140,13 +145,16 @@ public class AuthController {
             System.out.println("Registration successful for username: " + registerRequest.getUsername());
             // Get refresh token string from refreshTokenService
             String refreshTokenStr = authService.getRefreshTokenForUser(authResponse.getUser().getId());
-            // Set refresh token as HTTP-only cookie
-            Cookie refreshTokenCookie = new Cookie("refreshToken", refreshTokenStr);
-            refreshTokenCookie.setHttpOnly(true);
-            refreshTokenCookie.setSecure(true); // Set to true in production with HTTPS
-            refreshTokenCookie.setPath("/");
-            refreshTokenCookie.setMaxAge(30 * 24 * 60 * 60); // 30 days
-            response.addCookie(refreshTokenCookie);
+            // Set refresh token as HTTP-only cookie with Partitioned attribute for cross-site support
+            ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", refreshTokenStr)
+                    .httpOnly(true)
+                    .secure(true) // REQUIRED for Partitioned
+                    .path("/")
+                    .maxAge(30 * 24 * 60 * 60) // 30 days
+                    .sameSite("None") // REQUIRED for cross-site cookies
+                    .partitioned(true) // Enables CHIPS (Cookies Having Independent Partitioned State)
+                    .build();
+            response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
 
             return ResponseEntity.ok(authResponse);
         } catch (Exception e) {
@@ -198,13 +206,16 @@ public class AuthController {
                 authService.logout(authentication.getName());
             }
 
-            // Clear refresh token cookie
-            Cookie refreshTokenCookie = new Cookie("refreshToken", null);
-            refreshTokenCookie.setHttpOnly(true);
-            refreshTokenCookie.setSecure(false);
-            refreshTokenCookie.setPath("/");
-            refreshTokenCookie.setMaxAge(0);
-            response.addCookie(refreshTokenCookie);
+            // Clear refresh token cookie with matching attributes
+            ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", "")
+                    .httpOnly(true)
+                    .secure(true)
+                    .path("/")
+                    .maxAge(0) // Delete cookie
+                    .sameSite("None")
+                    .partitioned(true)
+                    .build();
+            response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
 
             Map<String, String> response_body = new HashMap<>();
             response_body.put("message", "Logged out successfully");
@@ -215,6 +226,7 @@ public class AuthController {
             return ResponseEntity.badRequest().body(error);
         }
     }
+
     @GetMapping("/me")
     public ResponseEntity<?> getCurrentUser(Authentication authentication) {
         try {
@@ -243,34 +255,6 @@ public class AuthController {
         }
     }
 
-    // @GetMapping("/me")
-    // public ResponseEntity<?> getCurrentUser(Authentication authentication) {
-    //     try {
-    //         if (authentication == null) {
-    //             Map<String, String> error = new HashMap<>();
-    //             error.put("message", "User not authenticated");
-    //             return ResponseEntity.badRequest().body(error);
-    //         }
-
-    //         // Get full user details
-    //         String username = authentication.getName();
-        //         com.edu.tutor_platform.user.entity.User user = ((com.edu.tutor_platform.user.entity.User) authentication.getPrincipal());
-
-    //         // Return current user info
-    //         Map<String, Object> userInfo = new HashMap<>();
-    //         userInfo.put("username", user.getUsername());
-    //         userInfo.put("firstName", user.getFirstName());
-    //         userInfo.put("lastName", user.getLastName());
-    //         userInfo.put("membership", user.getMembership());
-    //         userInfo.put("educationLevel", user.getEducationLevel());
-    //         return ResponseEntity.ok(userInfo);
-    //     } catch (Exception e) {
-    //         Map<String, String> error = new HashMap<>();
-    //         error.put("message", e.getMessage());
-    //         return ResponseEntity.badRequest().body(error);
-    //     }
-    // }
-    
     @GetMapping("/check-username")
     public ResponseEntity<Map<String, Boolean>> checkUsernameAvailability(@RequestParam String username) {
         Map<String, Boolean> response = new HashMap<>();
@@ -278,12 +262,12 @@ public class AuthController {
         response.put("available", isAvailable);
         return ResponseEntity.ok(response);
     }
-    
+
     @GetMapping("/rate-limit-status")
     public ResponseEntity<?> getRateLimitStatus(HttpServletRequest request) {
         String ipAddress = getClientIpAddress(request);
         LoginAttempt loginAttempt = authService.getLoginAttemptStatus(ipAddress);
-        
+
         Map<String, Object> response = new HashMap<>();
         response.put("ipAddress", ipAddress);
         response.put("attempts", loginAttempt.getAttempts());
@@ -291,7 +275,7 @@ public class AuthController {
         response.put("blockedUntil", loginAttempt.getBlockedUntil());
         response.put("isBlocked", loginAttempt.isBlocked());
         response.put("isRateLimited", authService.isRateLimited(ipAddress));
-        
+
         return ResponseEntity.ok(response);
     }
 
@@ -301,8 +285,4 @@ public class AuthController {
         authService.storeFcmToken(fcmToken, request);
         return ResponseEntity.ok("FCMtoken stored successfully!");
     }
-
-
 }
-
-
