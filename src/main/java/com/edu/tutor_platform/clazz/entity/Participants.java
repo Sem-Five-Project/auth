@@ -34,7 +34,7 @@ public class Participants {
     private StudentProfile student;
 
     @Column(name = "payment_id")
-    private Integer paymentId;
+    private String paymentId;
 
     // @ManyToOne
     // @JoinColumn(name = "session_id", nullable = false)
