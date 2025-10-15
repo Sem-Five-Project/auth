@@ -1,5 +1,6 @@
 package com.edu.tutor_platform.rating.entity;
 
+import com.edu.tutor_platform.clazz.entity.ClassEntity;
 import com.edu.tutor_platform.session.entity.Session;
 import com.edu.tutor_platform.studentprofile.entity.StudentProfile;
 import com.edu.tutor_platform.tutorprofile.entity.TutorProfile;
@@ -37,6 +38,10 @@ public class Rating {
     @JoinColumn(name = "session_id", nullable = false, foreignKey = @ForeignKey(name = "fk_rating_session"))
     private Session session;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "class_id", nullable = false, foreignKey = @ForeignKey(name = "fk_rating_class"))
+    private ClassEntity classEntity;
+
     @NotNull
     @DecimalMin(value = "1.0", message = "Rating must be at least 1.0")
     @DecimalMax(value = "5.0", message = "Rating must not exceed 5.0")
@@ -56,6 +61,10 @@ public class Rating {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
+        // Set classEntity from session if not already set
+        if (classEntity == null && session != null) {
+            classEntity = session.getClassEntity();
+        }
     }
 
     @PreUpdate
