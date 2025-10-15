@@ -1,12 +1,13 @@
-
 package com.edu.tutor_platform.booking.controller;
 
 import com.edu.tutor_platform.booking.dto.MonthlyRecurringSlotsRespondDTO;
 import com.edu.tutor_platform.booking.dto.NextMonthSlotRequestDTO;
-import com.edu.tutor_platform.booking.dto.NextMonthSlotRespondDTO;
+import com.edu.tutor_platform.booking.dto.NextMonthSlotsView;
 import com.edu.tutor_platform.booking.dto.SlotInstanceDTO;
 import com.edu.tutor_platform.booking.dto.SlotSearchRequestDTO;
 import com.edu.tutor_platform.booking.service.SlotManagementService;
+import com.edu.tutor_platform.booking.service.BookingService;
+import com.edu.tutor_platform.booking.dto.StudentBookingsResponseDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,6 +24,17 @@ import java.util.List;
 public class StudentBookingController {
 
     private final SlotManagementService slotManagementService;
+    private final BookingService bookingService;
+
+    @GetMapping("/is-paid")
+    public ResponseEntity<java.util.Map<String, Boolean>> isMonthPaid(
+            @RequestParam("studentId") Integer studentId,
+            @RequestParam("classId") Integer classId,
+            @RequestParam("month") Integer month,
+            @RequestParam("year") Integer year) {
+        boolean isPaid = bookingService.isMonthPaid(studentId, classId, month, year);
+        return ResponseEntity.ok(java.util.Map.of("isPaid", isPaid));
+    }
 
     /**
      * Search for available slots
@@ -60,6 +72,26 @@ public class StudentBookingController {
     }
 
     /**
+     * Get booking and class details for a student via DB function get_student_bookings
+     * Example: /student/bookings/details?studentId=123
+     */
+    @GetMapping("/booking-details")
+    public ResponseEntity<?> getStudentBookingsWithDetails(@RequestParam Long studentId) {
+        try {
+            List<StudentBookingsResponseDTO> list = bookingService.getStudentBookingsWithDetails(studentId);
+            return ResponseEntity.ok(list);
+        } catch (IllegalArgumentException iae) {
+            return ResponseEntity.badRequest().body(java.util.Map.of(
+                    "error", "BAD_REQUEST",
+                    "message", iae.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(java.util.Map.of(
+                    "error", "INTERNAL_SERVER_ERROR",
+                    "message", e.getMessage()));
+        }
+    }
+
+    /**
      * Get available slots for a specific tutor
      */
 
@@ -77,7 +109,7 @@ public class StudentBookingController {
                 return ResponseEntity.badRequest().build();
             }
         }
-        System.out.println("Recurring only filter1: " + recurring);
+System.out.println("Recurring only filter1: " + recurring);
 
         SlotSearchRequestDTO.SlotSearchRequestDTOBuilder builder = SlotSearchRequestDTO.builder()
                 .tutorId(tutorId);
@@ -86,7 +118,7 @@ public class StudentBookingController {
             builder.specificDate(targetDate);
         } else {
             builder.startDate(LocalDate.now())
-                    .endDate(LocalDate.now().plusWeeks(2));
+                   .endDate(LocalDate.now().plusWeeks(2));
         }
         if (recurring != null) {
             builder.recurringOnly(recurring);
@@ -118,18 +150,18 @@ public class StudentBookingController {
 
             List<SlotInstanceDTO> slots = slotManagementService.searchAvailableSlots(searchRequest);
             return ResponseEntity.ok(slots);
-
+            
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
         }
     }
     @PostMapping("/slots")
     public ResponseEntity<List<SlotInstanceDTO>> getAvailableSlots(@RequestBody SlotSearchRequestDTO request) {
-        return ResponseEntity.ok(slotManagementService.searchAvailableSlots(request));
+            return ResponseEntity.ok(slotManagementService.searchAvailableSlots(request));
     }
 
 
-    @GetMapping("/slots/recurring")
+     @GetMapping("/slots/recurring")
     public ResponseEntity<?> getTutorSlotsViaFunction(
             @RequestParam Long tutorId,
             @RequestParam String weekday,
@@ -162,8 +194,38 @@ public class StudentBookingController {
                     .year(year)
                     .month(month)
                     .build();
-            List<NextMonthSlotRespondDTO> result = slotManagementService.getNextMonthSlots(request);
-            return ResponseEntity.ok(result);
+                NextMonthSlotsView view = slotManagementService.getNextMonthSlots(request);
+                java.util.List<Object> payload = new java.util.ArrayList<>();
+                java.util.Map<String, Object> head = new java.util.LinkedHashMap<>();
+                head.put("all_slot_ids", view.getAllSlotIds() != null ? view.getAllSlotIds() : java.util.List.of());
+                payload.add(head);
+                if (view.getSlots() != null) {
+                    payload.addAll(view.getSlots());
+                }
+                return ResponseEntity.ok(payload);
+        } catch (IllegalArgumentException iae) {
+            return ResponseEntity.badRequest().body(java.util.Map.of(
+                    "error", "BAD_REQUEST",
+                    "message", iae.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(java.util.Map.of(
+                    "error", "INTERNAL_SERVER_ERROR",
+                    "message", e.getMessage()));
+        }
+    }
+
+    /**
+     * Get reserved slots for a student's class, with hourly rate and availability grouping.
+     * Returns wrapper: { "get_student_class_slots_with_rate": { hourly_rate, all_slot_ids, availability_details } }
+     * Example: /student/bookings/getreservedslots?studentId=49&classId=123
+     */
+    @GetMapping("/getreservedslots")
+    public ResponseEntity<?> getReservedSlots(
+            @RequestParam("studentId") Long studentId,
+            @RequestParam("classId") Long classId) {
+        try {
+            var payload = bookingService.getStudentClassSlotsWithRate(studentId, classId);
+            return ResponseEntity.ok(payload);
         } catch (IllegalArgumentException iae) {
             return ResponseEntity.badRequest().body(java.util.Map.of(
                     "error", "BAD_REQUEST",
@@ -206,6 +268,8 @@ public class StudentBookingController {
                     "message", e.getMessage()));
         }
     }
+
+}
     // @GetMapping("/slots") added by krishmal 2025/8/29
     // public ResponseEntity<List<SlotInstanceSummaryDTO>> getSlots(
     //         @RequestParam Long tutorId,
@@ -250,14 +314,14 @@ public class StudentBookingController {
     //     .toList();
     // return ResponseEntity.ok(slots);
     // }
-
+   
     /**
      * Create a booking reservation (locks slot for limited time)
      */
     // @PostMapping("/reserve")
     // public ResponseEntity<BookingDTO> createBookingReservation(
     //         @Valid @RequestBody BookingRequestDTO request) {
-
+        
     //     BookingDTO booking = bookingService.createBookingReservation(request);
     //     return ResponseEntity.ok(booking);
     // }
@@ -269,7 +333,7 @@ public class StudentBookingController {
     // public ResponseEntity<Map<String, Object>> processPayment(
     //         @PathVariable Long bookingId,
     //         @RequestBody BookingRequestDTO request) {
-
+        
     //     Map<String, Object> paymentResult = bookingService.processBookingPayment(bookingId, request);
     //     return ResponseEntity.ok(paymentResult);
     // }
@@ -290,14 +354,14 @@ public class StudentBookingController {
     // public ResponseEntity<List<BookingDTO>> getStudentBookings(
     //         @PathVariable Long studentId,
     //         @RequestParam(defaultValue = "false") boolean confirmedOnly) {
-
+        
     //     List<BookingDTO> bookings;
     //     if (confirmedOnly) {
     //         bookings = bookingService.getConfirmedStudentBookings(studentId);
     //     } else {
     //         bookings = bookingService.getStudentBookings(studentId);
     //     }
-
+        
     //     return ResponseEntity.ok(bookings);
     // }
 
@@ -317,13 +381,13 @@ public class StudentBookingController {
     // public ResponseEntity<Map<String, Object>> getBookingStatus(@PathVariable Long bookingId) {
     //     boolean isValid = bookingService.isBookingValid(bookingId);
     //     BookingDTO booking = bookingService.getBookingById(bookingId);
-
+        
     //     Map<String, Object> status = new java.util.HashMap<>();
     //     status.put("isValid", isValid);
     //     status.put("isConfirmed", booking.getIsConfirmed());
     //     status.put("lockedUntil", booking.getLockedUntil());
     //     status.put("bookingStatus", booking.getBookingStatus());
-
+        
     //     return ResponseEntity.ok(status);
     // }
 
@@ -349,13 +413,13 @@ public class StudentBookingController {
     // @GetMapping("/student/{studentId}/upcoming")
     // public ResponseEntity<List<BookingDTO>> getUpcomingBookings(@PathVariable Long studentId) {
     //     List<BookingDTO> confirmedBookings = bookingService.getConfirmedStudentBookings(studentId);
-
+        
     //     // Filter for upcoming bookings (slot date >= today)
     //     LocalDate today = LocalDate.now();
     //     List<BookingDTO> upcomingBookings = confirmedBookings.stream()
     //             .filter(booking -> !booking.getSlotDate().isBefore(today))
     //             .toList();
-
+        
     //     return ResponseEntity.ok(upcomingBookings);
     // }
 
@@ -366,12 +430,12 @@ public class StudentBookingController {
     // public ResponseEntity<Map<String, Object>> getBookingStats(@PathVariable Long studentId) {
     //     List<BookingDTO> allBookings = bookingService.getStudentBookings(studentId);
     //     List<BookingDTO> confirmedBookings = bookingService.getConfirmedStudentBookings(studentId);
-
+        
     //     LocalDate today = LocalDate.now();
     //     long upcomingCount = confirmedBookings.stream()
     //             .filter(booking -> !booking.getSlotDate().isBefore(today))
     //             .count();
-
+        
     //     long completedCount = confirmedBookings.stream()
     //             .filter(booking -> booking.getSlotDate().isBefore(today))
     //             .count();
@@ -387,7 +451,7 @@ public class StudentBookingController {
     //     stats.put("upcomingBookings", upcomingCount);
     //     stats.put("completedBookings", completedCount);
     //     stats.put("totalAmountSpent", totalSpent);
-
+        
     //     return ResponseEntity.ok(stats);
     // }
 
@@ -397,16 +461,15 @@ public class StudentBookingController {
     // @PostMapping("/quick-book")
     // public ResponseEntity<Map<String, Object>> quickBook(
     //         @Valid @RequestBody BookingRequestDTO request) {
-
+        
     //     // Create reservation first
     //     BookingDTO booking = bookingService.createBookingReservation(request);
-
+        
     //     // Get payment details
     //     Map<String, Object> paymentResult = bookingService.processBookingPayment(booking.getBookingId(), request);
-
+        
     //     // Add booking details to response
     //     paymentResult.put("booking", booking);
-
+        
     //     return ResponseEntity.ok(paymentResult);
     // }
-}

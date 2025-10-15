@@ -1,25 +1,22 @@
 package com.edu.tutor_platform.booking.service;
 
 import com.edu.tutor_platform.booking.dto.BookingDTO;
-import com.edu.tutor_platform.booking.dto.BookingRequestDTO;
 import com.edu.tutor_platform.booking.entity.Booking;
+import com.edu.tutor_platform.booking.dto.StudentBookingsResponseDTO;
 import com.edu.tutor_platform.booking.entity.SlotInstance;
 import com.edu.tutor_platform.booking.enums.SlotStatus;
 import com.edu.tutor_platform.booking.repository.BookingRepository;
 import com.edu.tutor_platform.booking.repository.SlotInstanceRepository;
-import com.edu.tutor_platform.payment.entity.Payment;
-import com.edu.tutor_platform.payment.service.PaymentService;
-import com.edu.tutor_platform.studentprofile.entity.StudentProfile;
-import com.edu.tutor_platform.studentprofile.repository.StudentProfileRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -30,19 +27,21 @@ public class BookingService {
 
     private final BookingRepository bookingRepository;
     private final SlotInstanceRepository slotInstanceRepository;
-    private final StudentProfileRepository studentProfileRepository;
-    private final PaymentService paymentService;
     //private final BookingValidationService validationService;
 
-    private static final int BOOKING_LOCK_MINUTES = 15; // 15 minutes to complete payment
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    public boolean isMonthPaid(Integer studentId, Integer classId, Integer month, Integer year) {
+        return bookingRepository.isMonthPaid(studentId, classId, month, year);
+    }
+
 
     /**
      * Create a booking reservation with time-limited lock
      */
     // @Transactional
     // public BookingDTO createBookingReservation(BookingRequestDTO request) {
-    //     log.info("Creating booking reservation for slot {} by student {}",
-    //             request.getSlotId(), request.getStudentId());
 
     //     // Validate booking request
     //     validationService.validateBookingRequest(request);
@@ -218,6 +217,38 @@ public class BookingService {
     }
 
     /**
+     * Calls DB function get_student_class_slots_with_rate(p_student_id, p_class_id)
+     * and wraps the JSON into { "get_student_class_slots_with_rate": { ... } }.
+     */
+    @Transactional(readOnly = true)
+    public java.util.Map<String, Object> getStudentClassSlotsWithRate(Long studentId, Long classId) {
+        Object dbResult = entityManager
+                .createNativeQuery("SELECT get_student_class_slots_with_rate(:p_student_id, :p_class_id)")
+                .setParameter("p_student_id", studentId)
+                .setParameter("p_class_id", classId)
+                .getSingleResult();
+
+        String json = dbResult != null ? dbResult.toString() : "{}";
+        java.util.Map<String, Object> inner;
+        try {
+            @SuppressWarnings("unchecked")
+            java.util.Map<String, Object> parsed = new com.fasterxml.jackson.databind.ObjectMapper()
+                    .readValue(json, java.util.Map.class);
+            inner = parsed != null ? parsed : java.util.Map.of();
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            inner = java.util.Map.of(
+                "success", false,
+                "message", "Invalid JSON returned from get_student_class_slots_with_rate",
+                "raw", json
+            );
+        }
+
+        java.util.Map<String, Object> wrapper = new java.util.LinkedHashMap<>();
+        wrapper.put("get_student_class_slots_with_rate", inner);
+        return wrapper;
+    }
+
+    /**
      * Get tutor's bookings
      */
     public List<BookingDTO> getTutorBookings(Long tutorId) {
@@ -225,6 +256,125 @@ public class BookingService {
         return bookings.stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Fetch student bookings with class details using DB function get_student_bookings(p_student_id)
+     * Shapes response grouped by time windows with slot dates.
+     */
+    public List<StudentBookingsResponseDTO> getStudentBookingsWithDetails(Long studentId) {
+        String json = bookingRepository.findStudentBookingsJson(studentId);
+        if (json == null || json.isBlank()) return java.util.Collections.emptyList();
+        try {
+            var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            var root = mapper.readTree(json);
+
+            // The function returns a JSON array string.
+            com.fasterxml.jackson.databind.JsonNode payload = root;
+
+            if (!payload.isArray()) {
+                 // If the payload is not an array, it might be wrapped in an object
+                 // by some PostgreSQL versions, e.g. {"get_student_bookings": [...]}.
+                 // This is less likely with jsonb_agg but we handle it defensively.
+                if (root.isObject() && root.has("get_student_bookings")) {
+                    payload = root.get("get_student_bookings");
+                } else {
+                    // If it's still not an array, we cannot proceed.
+                    log.warn("Expected a JSON array from findStudentBookingsJson but got: {}", json);
+                    return java.util.Collections.emptyList();
+                }
+            }
+
+            if (!payload.isArray()) return java.util.Collections.emptyList();
+
+            List<StudentBookingsResponseDTO> result = new java.util.ArrayList<>();
+            for (com.fasterxml.jackson.databind.JsonNode node : payload) {
+                Long bookingId = node.hasNonNull("booking_id") ? node.get("booking_id").asLong() : null;
+                String bookingStatus = node.hasNonNull("booking_status") ? node.get("booking_status").asText() : null;
+                String paymentId = node.hasNonNull("payment_id") ? node.get("payment_id").asText() : null;
+                java.math.BigDecimal paidAmount = null;
+                if (node.hasNonNull("paid_amount")) {
+                    try { paidAmount = new java.math.BigDecimal(node.get("paid_amount").asText()); } catch (Exception ignore) {}
+                }
+
+                // class_details is a nested object with tutor/subject/language and class_times
+                StudentBookingsResponseDTO.ClassDetails classDetails = null;
+                com.fasterxml.jackson.databind.JsonNode cd = node.get("class_details");
+                if (cd != null && cd.isObject()) {
+                    // tutor
+                    var tutorNode = cd.get("tutor");
+                    StudentBookingsResponseDTO.Tutor tutor = null;
+                    if (tutorNode != null && tutorNode.isObject()) {
+                        tutor = StudentBookingsResponseDTO.Tutor.builder()
+                                .id(tutorNode.hasNonNull("id") ? tutorNode.get("id").asLong() : null)
+                                .name(tutorNode.hasNonNull("name") ? tutorNode.get("name").asText() : null)
+                                .bio(tutorNode.hasNonNull("bio") ? tutorNode.get("bio").asText() : null)
+                                .build();
+                    }
+
+                    // subject
+                    var subjectNode = cd.get("subject");
+                    StudentBookingsResponseDTO.Subject subject = null;
+                    if (subjectNode != null && subjectNode.isObject()) {
+                        subject = StudentBookingsResponseDTO.Subject.builder()
+                                .id(subjectNode.hasNonNull("id") ? subjectNode.get("id").asLong() : null)
+                                .name(subjectNode.hasNonNull("name") ? subjectNode.get("name").asText() : null)
+                                .build();
+                    }
+
+                    // language
+                    var languageNode = cd.get("language");
+                    StudentBookingsResponseDTO.Language language = null;
+                    if (languageNode != null && languageNode.isObject()) {
+                        language = StudentBookingsResponseDTO.Language.builder()
+                                .id(languageNode.hasNonNull("id") ? languageNode.get("id").asLong() : null)
+                                .name(languageNode.hasNonNull("name") ? languageNode.get("name").asText() : null)
+                                .build();
+                    }
+
+                    // class_times: [ { start_time, end_time, slots: ["2025-10-02", ...] } ]
+                    java.util.List<StudentBookingsResponseDTO.ClassTimeWindow> classTimes = new java.util.ArrayList<>();
+                    var ct = cd.get("class_times");
+                    if (ct != null && ct.isArray()) {
+                        for (com.fasterxml.jackson.databind.JsonNode g : ct) {
+                            java.time.LocalTime startTime = g.hasNonNull("start_time") ? java.time.LocalTime.parse(g.get("start_time").asText()) : null;
+                            java.time.LocalTime endTime = g.hasNonNull("end_time") ? java.time.LocalTime.parse(g.get("end_time").asText()) : null;
+                            java.util.List<java.time.LocalDate> dates = new java.util.ArrayList<>();
+                            var slotsArr = g.get("slots");
+                            if (slotsArr != null && slotsArr.isArray()) {
+                                for (com.fasterxml.jackson.databind.JsonNode d : slotsArr) {
+                                    try { dates.add(java.time.LocalDate.parse(d.asText())); } catch (Exception ignore) {}
+                                }
+                            }
+                            classTimes.add(StudentBookingsResponseDTO.ClassTimeWindow.builder()
+                                    .startTime(startTime)
+                                    .endTime(endTime)
+                                    .slots(dates)
+                                    .build());
+                        }
+                    }
+
+                    classDetails = StudentBookingsResponseDTO.ClassDetails.builder()
+                            .tutor(tutor)
+                            .subject(subject)
+                            .language(language)
+                            .classTimes(classTimes)
+                            .build();
+                }
+
+                result.add(StudentBookingsResponseDTO.builder()
+                        .bookingId(bookingId)
+                        .bookingStatus(bookingStatus)
+                        .paymentId(paymentId)
+                        .paidAmount(paidAmount)
+                        .classDetails(classDetails)
+                        .build());
+            }
+            return result;
+        } catch (Exception e) {
+            log.error("Failed to parse get_student_bookings JSON", e);
+            return java.util.Collections.emptyList();
+        }
     }
 
     /**

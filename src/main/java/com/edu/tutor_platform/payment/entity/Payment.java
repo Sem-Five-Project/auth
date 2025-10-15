@@ -85,10 +85,10 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "payment")
-@Data                // Generates getters, setters, toString, equals, hashCode
-@NoArgsConstructor   // No-args constructor
-@AllArgsConstructor  // All-args constructor
-@Builder             // Builder pattern support
+@Data                
+@NoArgsConstructor  
+@AllArgsConstructor  
+@Builder             
 public class Payment {
 
     @Id
@@ -122,6 +122,7 @@ public class Payment {
     @Column(nullable = false, unique = true)
     private String orderId;
 
+    @Column(name = "payhere_payment_id")
     private String payherePaymentId;
     private Long slotId;
     private String status;

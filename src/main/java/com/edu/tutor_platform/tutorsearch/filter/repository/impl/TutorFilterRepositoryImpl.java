@@ -84,7 +84,7 @@ public class TutorFilterRepositoryImpl implements TutorFilterRepository {
             String json = objectMapper.writeValueAsString(request);
             log.debug("Tutor filter JSON payload: {}", json);
 
-            String sql = "SELECT * FROM public.search_tutors_by_filters(:filters::jsonb)";
+            String sql = "SELECT * FROM public.search_tutors_by_filtersss(:filters::jsonb)";
             var params = new MapSqlParameterSource().addValue("filters", json);
 
             return jdbcTemplate.query(sql, params, (rs, rowNum) -> {
