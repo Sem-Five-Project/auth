@@ -70,6 +70,7 @@ public class RatingService {
                 .student(student)
                 .tutor(tutor)
                 .session(session)
+                .classEntity(session.getClassEntity())
                 .ratingValue(request.getRatingValue())
                 .reviewText(request.getReviewText())
                 .build();
