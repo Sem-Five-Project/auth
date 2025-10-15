@@ -32,14 +32,13 @@ public class TutorProfile {
     @Column(name = "hourly_rate", precision = 10, scale = 2)
     private BigDecimal hourlyRate;
 
-
     @Column(name = "verified", nullable = false)
     private boolean verified = false;
 
     @Column(name = "status")
     private String status = "ACTIVE";
 
-    @Column(name="admin_notes")
+    @Column(name = "admin_notes")
     private String adminNotes;
 
     // ⭐ Rating (0.0 – 5.0) with Lombok @Builder default
@@ -68,7 +67,7 @@ public class TutorProfile {
     private List<TutorLanguage> tutorLanguages = new ArrayList<>();
 
     // Bidirectional mapping for TutorAvailability
-    @com.fasterxml.jackson.annotation.JsonBackReference
+    @com.fasterxml.jackson.annotation.JsonManagedReference
     @OneToMany(mappedBy = "tutorProfile", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<com.edu.tutor_platform.booking.entity.TutorAvailability> tutorAvailabilities = new ArrayList<>();
 
