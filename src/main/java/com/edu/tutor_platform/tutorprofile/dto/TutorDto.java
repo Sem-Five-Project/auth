@@ -26,7 +26,7 @@ public class TutorDto {
     private String profilePictureUrl;
     private String bio;
     private BigDecimal hourlyRate;
-    private List<TutorSubject> subjects;
+    private List<TutorSubjectDto> subjects;
     private List<TutorLanguage> statuses;
     private Boolean verified;
     private String status;
