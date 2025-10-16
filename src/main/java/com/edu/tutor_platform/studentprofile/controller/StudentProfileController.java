@@ -7,6 +7,7 @@ import com.edu.tutor_platform.studentprofile.dto.StudentsDto;
 import com.edu.tutor_platform.studentprofile.dto.StudentAcademicInfoDTO;
 import com.edu.tutor_platform.studentprofile.dto.StudentProfileInfoRespondDTO;
 import com.edu.tutor_platform.studentprofile.dto.StudentProfileResponse;
+import com.edu.tutor_platform.studentprofile.dto.ClasssDetailResponseDto;
 import com.edu.tutor_platform.studentprofile.service.StudentProfileService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/students")
+@RequestMapping("students")
 @RequiredArgsConstructor
 @Slf4j
 public class StudentProfileController {
@@ -281,6 +282,20 @@ public class StudentProfileController {
                             "error", "INTERNAL_ERROR",
                             "message", e.getMessage()
                     ));
+        }
+    }
+
+    // New endpoint: /students/{studentId}/get-all-class-details
+    @GetMapping("/{studentId}/get-all-class-details")
+    public ResponseEntity<?> getAllClassDetails(@PathVariable Long studentId) {
+        System.out.println("Fetching all class details for studentId: " + studentId);
+        try {
+            ClasssDetailResponseDto dto = studentProfileService.getAllClassDetails(studentId);
+            return ResponseEntity.ok(dto);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", e.getMessage()));
         }
     }
 }

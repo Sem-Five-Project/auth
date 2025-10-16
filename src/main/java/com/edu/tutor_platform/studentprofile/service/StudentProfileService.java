@@ -8,6 +8,7 @@ import com.edu.tutor_platform.studentprofile.dto.StudentProfileResponse;
 import com.edu.tutor_platform.studentprofile.dto.StudentAcademicInfoDTO;
 import com.edu.tutor_platform.studentprofile.dto.StudentProfileInfoRespondDTO;
 import com.edu.tutor_platform.studentprofile.dto.StudentProfilePaymentRespondDTO;
+import com.edu.tutor_platform.studentprofile.dto.ClasssDetailResponseDto;
 import com.edu.tutor_platform.studentprofile.entity.StudentProfile;
 import com.edu.tutor_platform.studentprofile.enums.StudentProfileStatus;
 import com.edu.tutor_platform.studentprofile.entity.Membership;
@@ -24,6 +25,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.List;
 import java.util.Optional;
@@ -36,6 +39,8 @@ public class StudentProfileService {
 
     private final StudentProfileRepository studentProfileRepository;
     private final RefreshTokenService refreshTokenService;
+    private final ObjectMapper objectMapper = new ObjectMapper()
+        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     @Transactional
     public void createStudentProfile(User user) {
@@ -255,6 +260,22 @@ public class StudentProfileService {
         return profiles.stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Calls DB function get_student_classes_with_details(studentId) and returns mapped DTO.
+     */
+    public ClasssDetailResponseDto getAllClassDetails(Long studentId) {
+        String jsonText = studentProfileRepository.getStudentClassesWithDetailsJson(studentId);
+        if (jsonText == null || jsonText.isBlank()) {
+            return new ClasssDetailResponseDto(List.of());
+        }
+        try {
+            return objectMapper.readValue(jsonText, ClasssDetailResponseDto.class);
+        } catch (Exception e) {
+            log.error("Failed to parse get_student_classes_with_details JSON for student {}: {}", studentId, e.getMessage());
+            throw new RuntimeException("Failed to parse class details response");
+        }
     }
 
     @Transactional
