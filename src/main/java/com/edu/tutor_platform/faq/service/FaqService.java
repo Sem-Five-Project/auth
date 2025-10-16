@@ -20,7 +20,7 @@ public class FaqService {
         long totalFaqs = faqRepository.count();
         long activeFaqs = faqRepository.findAll()
                 .stream()
-                .filter(Faq::getIsActive)
+                .filter(faq -> faq.getIsActive() != null && faq.getIsActive())
                 .count();
         long categories =  2;
 
