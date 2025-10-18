@@ -3,6 +3,7 @@ package com.edu.tutor_platform.rating.entity;
 import com.edu.tutor_platform.session.entity.Session;
 import com.edu.tutor_platform.studentprofile.entity.StudentProfile;
 import com.edu.tutor_platform.tutorprofile.entity.TutorProfile;
+import com.edu.tutor_platform.clazz.entity.ClassEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
@@ -36,6 +37,10 @@ public class Rating {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "session_id", nullable = false, foreignKey = @ForeignKey(name = "fk_rating_session"))
     private Session session;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "class_id", nullable = false, foreignKey = @ForeignKey(name = "fk_rating_class"))
+    private ClassEntity classEntity;
 
     @NotNull
     @DecimalMin(value = "1.0", message = "Rating must be at least 1.0")

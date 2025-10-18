@@ -12,21 +12,29 @@ import java.util.List;
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ClasssDetailResponseDto {
-    // Keep property name to match DB JSON exactly
+    // Updated property names to match new DB JSON keys
     private List<ClassDetail> get_student_classes_with_details;
+    private List<ClassDetail> get_student_classes_with_details2;
 
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
     public static class ClassDetail {
         private Long class_id;
+        private Long tutor_id;
+        private Long subject_id;
+        private Long language_id;
         private String class_link;
         private String tutor_name;
         private String subject;
         private String language;
         private String class_type;
         private List<ClassDoc> class_docs; // may be null
+        // hourly_rate may be null in DB; use wrapper Double
+        private Double hourly_rate;
         private List<AvailabilityGroup> class_slots;
+        // optional rating object returned by DB for some classes
+        private RatingDto rating;
     }
 
     @Data
@@ -52,5 +60,13 @@ public class ClasssDetailResponseDto {
     public static class SlotItem {
         private String date;   // ISO date string
         private String status; // e.g., UPCOMMING, ONGOING
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class RatingDto {
+        private Integer rating_value;
+        private String review_text;
     }
 }

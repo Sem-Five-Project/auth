@@ -9,6 +9,7 @@ import com.edu.tutor_platform.rating.exception.RatingNotFoundException;
 import com.edu.tutor_platform.rating.exception.UnauthorizedRatingException;
 import com.edu.tutor_platform.rating.repository.RatingRepository;
 import com.edu.tutor_platform.session.entity.Session;
+import com.edu.tutor_platform.studentprofile.repository.StudentProfileRepository;
 import com.edu.tutor_platform.session.service.SessionService;
 import com.edu.tutor_platform.studentprofile.entity.StudentProfile;
 import com.edu.tutor_platform.studentprofile.service.StudentProfileService;
@@ -36,6 +37,7 @@ public class RatingService {
     private final StudentProfileService studentProfileService;
     private final TutorProfileService tutorProfileService;
     private final SessionService sessionService;
+    private final StudentProfileRepository studentProfileRepository;
 
     /**
      * Add a new rating for a session
@@ -69,7 +71,8 @@ public class RatingService {
         Rating rating = Rating.builder()
                 .student(student)
                 .tutor(tutor)
-                .session(session)
+        .session(session)
+        .classEntity(session.getClassEntity())
                 .ratingValue(request.getRatingValue())
                 .reviewText(request.getReviewText())
                 .build();
@@ -211,5 +214,55 @@ public class RatingService {
                 .createdAt(rating.getCreatedAt())
                 .updatedAt(rating.getUpdatedAt())
                 .build();
+    }
+
+    /**
+     * Create a quick rating from external source (no authentication)
+     * Fields that cannot be resolved will be left null where DB allows; otherwise an exception is thrown.
+     */
+    @Transactional
+    public RatingResponse createQuickRating(com.edu.tutor_platform.rating.dto.RatingQuickRequest request) {
+        // Resolve tutor and session (require these for relational integrity)
+        TutorProfile tutor = null;
+        if (request.getTutorId() != null) {
+            tutor = tutorProfileService.getTutorProfileById(request.getTutorId());
+        }
+
+        Session session = null;
+        if (request.getClass_id() != null) {
+            session = sessionService.getSessionEntityById(request.getClass_id());
+        }
+
+        if (tutor == null) {
+            throw new IllegalArgumentException("Invalid or missing tutorId");
+        }
+        if (session == null) {
+            throw new IllegalArgumentException("Invalid or missing class_id (session id)");
+        }
+
+        // Pick any existing student profile as fallback so DB non-null constraint is satisfied
+        StudentProfile student = studentProfileRepository.findAll().stream().findFirst()
+                .orElseThrow(() -> new RuntimeException("No student profile found in the system to associate rating"));
+
+        java.math.BigDecimal ratingValue = null;
+        if (request.getRatingValue() != null) {
+            ratingValue = java.math.BigDecimal.valueOf(request.getRatingValue().intValue());
+        }
+
+        Rating rating = Rating.builder()
+                .student(student)
+                .tutor(tutor)
+                .session(session)
+        .classEntity(session.getClassEntity())
+        .ratingValue(ratingValue)
+                .reviewText(request.getFeedback())
+                .build();
+
+        Rating saved = ratingRepository.save(rating);
+
+        // update tutor average
+        updateTutorAverageRating(tutor);
+
+        return convertToRatingResponse(saved);
     }
 }
