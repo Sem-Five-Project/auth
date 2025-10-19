@@ -9,4 +9,8 @@ import org.springframework.stereotype.Repository;
 public interface ParticipantRepository extends JpaRepository<Participants, Long> {
     java.util.List<Participants> findByClassEntity(ClassEntity classEntity);
 
+    java.util.List<Participants> findByStudent(com.edu.tutor_platform.studentprofile.entity.StudentProfile student);
+
+    java.util.List<Participants> findByStudentStudentId(Long studentId);
+
 }

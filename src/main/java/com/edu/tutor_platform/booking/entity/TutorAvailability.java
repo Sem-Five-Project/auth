@@ -15,8 +15,8 @@ import java.util.List;
 @Entity
 @Table(name = "tutor_availability")
 @Data
-@ToString(exclude = {"slotInstances", "tutorProfile"})
-@EqualsAndHashCode(exclude = {"slotInstances", "tutorProfile"})
+@ToString(exclude = { "slotInstances", "tutorProfile" })
+@EqualsAndHashCode(exclude = { "slotInstances", "tutorProfile" })
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -28,7 +28,7 @@ public class TutorAvailability {
     private Long availabilityId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JsonManagedReference
+    @JsonBackReference
     @JoinColumn(name = "tutor_id", nullable = false)
     private TutorProfile tutorProfile;
 

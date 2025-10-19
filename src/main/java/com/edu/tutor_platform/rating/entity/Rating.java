@@ -1,5 +1,6 @@
 package com.edu.tutor_platform.rating.entity;
 
+import com.edu.tutor_platform.clazz.entity.ClassEntity;
 import com.edu.tutor_platform.session.entity.Session;
 import com.edu.tutor_platform.studentprofile.entity.StudentProfile;
 import com.edu.tutor_platform.tutorprofile.entity.TutorProfile;
@@ -61,6 +62,10 @@ public class Rating {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
+        // Set classEntity from session if not already set
+        if (classEntity == null && session != null) {
+            classEntity = session.getClassEntity();
+        }
     }
 
     @PreUpdate

@@ -840,4 +840,12 @@ public class PaymentService {
                                 payment.getPayherePaymentId(),
                                 bookingStatus);
         }
+
+        /**
+         * Retrieve all payments - for admin use only
+         */
+        @Transactional
+        public List<Payment> getAllPayments() {
+                return paymentRepository.findAll();
+        }
 }

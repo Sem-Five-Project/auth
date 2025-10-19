@@ -14,9 +14,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.edu.tutor_platform.payment.dto.RefundRequestDTO;
+import org.springframework.security.access.prepost.PreAuthorize;
+import com.edu.tutor_platform.payment.entity.Payment;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -151,7 +154,27 @@ public ResponseEntity<PaymentCompleteResponse> confirmPayment(@Valid @RequestBod
         }
     }
 
-
+    /**
+     * Admin-only endpoint to retrieve all payments
+     */
+    @GetMapping("/all")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> getAllPayments() {
+        try {
+            List<Payment> payments = paymentService.getAllPayments();
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("count", payments.size());
+            response.put("payments", payments);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Error retrieving all payments: {}", e.getMessage(), e);
+            Map<String, Object> err = new HashMap<>();
+            err.put("success", false);
+            err.put("message", "Failed to retrieve payments: " + e.getMessage());
+            return ResponseEntity.status(500).body(err);
+        }
+    }
 
   
 }
