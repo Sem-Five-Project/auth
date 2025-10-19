@@ -379,7 +379,39 @@ public class PaymentService {
                 }
 
                 // Manual refunds should respect the 24-hour rule -> shouldRefund=false
-                return callProcessRefund(request.getPaymentId(), false);
+                java.util.Map<String, Object> dbOutcome = callProcessRefund(request.getPaymentId(), false);
+
+                // After running the DB-side refund logic, attempt to call PayHere refund API
+                try {
+                        paymentRepository.findById(request.getPaymentId()).ifPresent(p -> {
+                                String phId = p.getPayherePaymentId();
+                                if (phId != null && !phId.isBlank()) {
+                                        try {
+                                                PayHereRefundResponse resp = payHereService.refund(phId,
+                                                                request.getReason() == null ? "Manual refund" : request.getReason());
+                                                // attach a small summary of gateway response to returned map
+                                                dbOutcome.put("payhere_refund", java.util.Map.of(
+                                                                "status", resp.getStatus(),
+                                                                "msg", resp.getMsg()
+                                                ));
+                                        } catch (Exception e) {
+                                                log.error("PayHere refund API call failed for payment {}", p.getPaymentId(), e);
+                                                dbOutcome.put("payhere_refund_error", e.getMessage());
+                                        }
+                                } else {
+                                        dbOutcome.put("payhere_refund", java.util.Map.of(
+                                                        "status", -1,
+                                                        "msg", "skipped - no payhere payment id"
+                                                ));
+                                }
+                        });
+                } catch (Exception e) {
+                        // Non-fatal - we already performed DB-side work; just report the issue
+                        log.error("Unexpected error while attempting PayHere refund for payment {}", request.getPaymentId(), e);
+                        dbOutcome.put("payhere_refund_error", e.getMessage());
+                }
+
+                return dbOutcome;
         }
 
         /**

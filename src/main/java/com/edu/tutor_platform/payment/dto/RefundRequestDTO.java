@@ -6,4 +6,5 @@ import lombok.Data;
 public class RefundRequestDTO {
     private String paymentId;
     private Long bookingId;
+    private String reason; // optional human-readable refund reason passed to gateway
 }

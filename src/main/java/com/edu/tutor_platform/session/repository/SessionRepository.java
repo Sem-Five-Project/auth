@@ -17,6 +17,9 @@ public interface SessionRepository extends JpaRepository<Session, Long> {
 
     Page<Session> findByStartTimeBeforeAndEndTimeAfter(LocalDateTime start, LocalDateTime end, Pageable pageable);
 
+  // Find all sessions for a given class id
+  java.util.List<Session> findByClassEntity_ClassId(Long classId);
+
 
     @Query("""
     SELECT DISTINCT s FROM Session s
@@ -42,4 +45,5 @@ public interface SessionRepository extends JpaRepository<Session, Long> {
 
 
     Long countByStatus(String completed);
+
 }

@@ -2,6 +2,7 @@ package com.edu.tutor_platform.user.service;
 
 import com.edu.tutor_platform.user.dto.AuthResponse;
 import com.edu.tutor_platform.user.dto.LoginRequest;
+import com.edu.tutor_platform.user.dto.RefreshResponse;
 import com.edu.tutor_platform.user.dto.RegisterRequest;
 import com.edu.tutor_platform.user.entity.LoginAttempt;
 import com.edu.tutor_platform.user.entity.RefreshToken;
@@ -209,7 +210,7 @@ public class AuthService {
         return refreshToken.getToken();
     }
 
-    public AuthResponse refreshToken(String refreshTokenStr, String ipAddress) {
+    public RefreshResponse refreshToken(String refreshTokenStr, String ipAddress) {
         if (isIpBlocked(ipAddress)) {
             throw new RuntimeException("IP address is temporarily blocked due to too many failed attempts");
         }
@@ -222,6 +223,8 @@ public class AuthService {
                     .map(RefreshToken::getUser)
                     .map(user -> {
                         String accessToken = jwtUtil.generateAccessToken(user);
+                        RefreshToken newRefreshToken = refreshTokenService.createRefreshToken(user);
+
                         AuthResponse.UserInfo userInfo = new AuthResponse.UserInfo(
                                 user.getId(),
                                 user.getUsername(),
@@ -240,7 +243,8 @@ public class AuthService {
                         } catch (Exception ex) {
                             System.out.println("Failed to attach role specific id (refresh): " + ex.getMessage());
                         }
-                        return new AuthResponse(accessToken, userInfo);
+                        AuthResponse authResponse = new AuthResponse(accessToken, userInfo);
+                        return new RefreshResponse(authResponse, newRefreshToken.getToken());
                     })
                     .orElseThrow(() -> new RuntimeException("Refresh token is not in database"));
         } catch (Exception e) {
