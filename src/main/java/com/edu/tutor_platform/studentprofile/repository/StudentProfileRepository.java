@@ -57,4 +57,11 @@ public interface StudentProfileRepository extends JpaRepository<StudentProfile, 
 
     @Query(nativeQuery = true, value = "SELECT * FROM public.get_student_payment_history(:studentId, :period)")
     List<StudentProfilePaymentRespondDTO> findPaymentHistoryByStudentId(@Param("studentId") Long studentId, @Param("period") String period);
+
+        // Call Supabase/PostgreSQL function that returns nested JSONB, cast to text for transport
+        @Query(value = "SELECT public.get_student_classes_with_details2(:studentId)::text", nativeQuery = true)
+        String getStudentClassesWithDetailsJson(@Param("studentId") Long studentId);
+
+        @Query(value = "SELECT public.get_student_upcoming_classes(:studentId)::text", nativeQuery = true)
+        String getStudentUpcomingClassesJson(@Param("studentId") Long studentId);
 }
