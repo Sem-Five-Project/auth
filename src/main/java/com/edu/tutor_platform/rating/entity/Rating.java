@@ -4,6 +4,7 @@ import com.edu.tutor_platform.clazz.entity.ClassEntity;
 import com.edu.tutor_platform.session.entity.Session;
 import com.edu.tutor_platform.studentprofile.entity.StudentProfile;
 import com.edu.tutor_platform.tutorprofile.entity.TutorProfile;
+import com.edu.tutor_platform.clazz.entity.ClassEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;

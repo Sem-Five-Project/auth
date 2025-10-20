@@ -43,6 +43,10 @@ public class SessionService {
                 .build();
     }
 
+        public java.util.List<Session> getSessionsByClassId(Long classId) {
+                return sessionRepository.findByClassEntity_ClassId(classId);
+        }
+
     public List<Session> getSessionsStartingBetween(LocalDateTime now, LocalDateTime remindTime) {
         return sessionRepository.findByStartTimeBetween(now, remindTime);
     }

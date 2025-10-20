@@ -7,7 +7,13 @@ import com.edu.tutor_platform.studentprofile.dto.StudentsDto;
 import com.edu.tutor_platform.studentprofile.dto.StudentAcademicInfoDTO;
 import com.edu.tutor_platform.studentprofile.dto.StudentProfileInfoRespondDTO;
 import com.edu.tutor_platform.studentprofile.dto.StudentProfileResponse;
+import com.edu.tutor_platform.studentprofile.dto.ClasssDetailResponseDto;
+import com.edu.tutor_platform.studentprofile.dto.StudentUpcomingClassResponseDto;
 import com.edu.tutor_platform.studentprofile.service.StudentProfileService;
+import com.edu.tutor_platform.clazz.repository.ClassDocRepository;
+import com.edu.tutor_platform.rating.dto.RatingQuickRequest;
+import com.edu.tutor_platform.session.repository.SessionRepository;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -24,16 +30,16 @@ import com.edu.tutor_platform.session.entity.Session;
 import com.edu.tutor_platform.clazz.entity.ClassDoc;
 
 @RestController
-@RequestMapping("/students")
+@RequestMapping("students")
 @RequiredArgsConstructor
 @Slf4j
 public class StudentProfileController {
 
     private final StudentProfileService studentProfileService;
+    // ratingService removed; logic delegated to StudentProfileService
     private final com.edu.tutor_platform.clazz.service.ParticipantsService participantsService;
     private final SessionRepository sessionRepository;
     private final ClassDocRepository classDocRepository;
-
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("")
     public ResponseEntity<List<StudentsDto>> getAllStudents(
@@ -316,6 +322,43 @@ public class StudentProfileController {
             return ResponseEntity.ok(Map.of("classes", dtos));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // New endpoint: /students/{studentId}/get-all-class-details
+    @GetMapping("/{studentId}/get-all-class-details")
+    public ResponseEntity<?> getAllClassDetails(@PathVariable Long studentId) {
+        System.out.println("Fetching all class details for studentId: " + studentId);
+        try {
+            ClasssDetailResponseDto dto = studentProfileService.getAllClassDetails(studentId);
+            return ResponseEntity.ok(dto);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/{studentId}/upcoming-classes")
+    public ResponseEntity<?> getUpcomingClasses(@PathVariable Long studentId) {
+        try {
+            StudentUpcomingClassResponseDto dto = studentProfileService.getUpcomingClasses(studentId);
+            return ResponseEntity.ok(dto);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", e.getMessage()));
+        }
+    }
+    @PostMapping("/{studentId}/set-rating")
+    public ResponseEntity<?> setQuickRating(@PathVariable Long studentId, @RequestBody RatingQuickRequest request) {
+        try {
+            java.util.Map<String, Object> resp = studentProfileService.addRatingForStudent(studentId, request);
+            return ResponseEntity.ok(resp);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", e.getMessage()));
         }
     }
 }

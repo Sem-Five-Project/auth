@@ -3,6 +3,7 @@ package com.edu.tutor_platform.user.controller;
 import com.edu.tutor_platform.user.dto.AuthResponse;
 import com.edu.tutor_platform.user.dto.AuthResponse.UserInfo;
 import com.edu.tutor_platform.user.dto.LoginRequest;
+import com.edu.tutor_platform.user.dto.RefreshResponse;
 import com.edu.tutor_platform.user.dto.RegisterRequest;
 import com.edu.tutor_platform.user.entity.LoginAttempt;
 import com.edu.tutor_platform.user.service.AuthService;
@@ -101,15 +102,14 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<?> refreshToken(HttpServletRequest request) {
+    public ResponseEntity<?> refreshToken(HttpServletRequest request, HttpServletResponse response) {
         String ipAddress = getClientIpAddress(request);
-        System.out.println("Refresh endpoint called with username: before try from IP: " + ipAddress);
+        System.out.println("Refresh endpoint called from IP: " + ipAddress);
 
         try {
-            System.out.println("Refresh endpoint called with username: after try");
-
             String refreshToken = null;
             Cookie[] cookies = request.getCookies();
+
             if (cookies != null) {
                 for (Cookie cookie : cookies) {
                     if ("refreshToken".equals(cookie.getName())) {
@@ -118,15 +118,26 @@ public class AuthController {
                     }
                 }
             }
+            System.out.println("Extracted refreshToken: " + refreshToken);
 
             if (refreshToken == null) {
-                Map<String, String> error = new HashMap<>();
-                error.put("message", "Refresh token not found");
-                return ResponseEntity.badRequest().body(error);
+                return ResponseEntity.badRequest().body(Map.of("message", "Refresh token not found in cookie"));
             }
 
-            AuthResponse authResponse = authService.refreshToken(refreshToken, ipAddress);
-            return ResponseEntity.ok(authResponse);
+            RefreshResponse refreshResponse = authService.refreshToken(refreshToken, ipAddress);
+
+            // Set the NEW refresh token as an HTTP-only cookie
+            ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", refreshResponse.getNewRefreshToken())
+                    .httpOnly(true)
+                    .secure(true)
+                    .path("/")
+                    .maxAge(30 * 24 * 60 * 60) // 30 days
+                    .sameSite("None")
+                    .partitioned(true)
+                    .build();
+            response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
+
+            return ResponseEntity.ok(refreshResponse.getAuthResponse());
         } catch (Exception e) {
             Map<String, String> error = new HashMap<>();
             error.put("message", e.getMessage());

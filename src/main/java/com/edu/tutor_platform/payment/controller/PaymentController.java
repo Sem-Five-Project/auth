@@ -95,7 +95,7 @@ public ResponseEntity<PaymentCompleteResponse> confirmPayment(@Valid @RequestBod
             }
         }
 
-        @GetMapping("/validate")
+        @PostMapping("/validate")
         public ResponseEntity<Map<String, Object>> checkPaymentStatus(@RequestBody Map<String, Object> body) {
             Object idObj = body.get("payment_id");
             boolean pending = false;
@@ -106,6 +106,7 @@ public ResponseEntity<PaymentCompleteResponse> confirmPayment(@Valid @RequestBod
             resp.put("success", pending);
             return ResponseEntity.ok(resp);
         }
+
 
 
         @PostMapping("/refund")
@@ -141,6 +142,7 @@ public ResponseEntity<PaymentCompleteResponse> confirmPayment(@Valid @RequestBod
 
     @PostMapping("/payhere/notify")
     public ResponseEntity<String> handlePayHereNotify(@RequestParam Map<String, String> payload) {
+        System.out.println("payhere hit");
         try {
             log.info("Received PayHere notification for order_id: {}", payload.get("order_id"));
             paymentService.handleNotify(payload);
