@@ -10,7 +10,10 @@ import com.edu.tutor_platform.studentprofile.dto.StudentProfileResponse;
 import com.edu.tutor_platform.studentprofile.dto.ClasssDetailResponseDto;
 import com.edu.tutor_platform.studentprofile.dto.StudentUpcomingClassResponseDto;
 import com.edu.tutor_platform.studentprofile.service.StudentProfileService;
+import com.edu.tutor_platform.clazz.repository.ClassDocRepository;
 import com.edu.tutor_platform.rating.dto.RatingQuickRequest;
+import com.edu.tutor_platform.session.repository.SessionRepository;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -30,7 +33,9 @@ public class StudentProfileController {
 
     private final StudentProfileService studentProfileService;
     // ratingService removed; logic delegated to StudentProfileService
-
+    private final com.edu.tutor_platform.clazz.service.ParticipantsService participantsService;
+    private final SessionRepository sessionRepository;
+    private final ClassDocRepository classDocRepository;
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("")
     public ResponseEntity<List<StudentsDto>> getAllStudents(
