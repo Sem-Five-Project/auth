@@ -28,6 +28,7 @@ package com.edu.tutor_platform.user.dto;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Pattern;
 
 public class RegisterRequest {
     
@@ -55,6 +56,8 @@ public class RegisterRequest {
     @NotBlank(message = "Confirm password is required")
     private String confirmPassword;
     
+    @NotBlank(message = "Role is required")
+    @Pattern(regexp = "STUDENT|TUTOR|ADMIN", message = "Role must be either STUDENT, TUTOR, or ADMIN")
     private String role;
     
     public RegisterRequest() {}
@@ -126,4 +129,3 @@ public class RegisterRequest {
         this.role = role;
     }
 }
-

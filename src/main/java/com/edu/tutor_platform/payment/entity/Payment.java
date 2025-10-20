@@ -125,6 +125,8 @@ public class Payment {
     @Column(name = "payhere_payment_id")
     private String payherePaymentId;
     private Long slotId;
+
+    @Column(name = "status")
     private String status;
     private Long tutorId;
 
