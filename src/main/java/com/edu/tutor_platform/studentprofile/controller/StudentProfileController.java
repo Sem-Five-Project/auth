@@ -33,9 +33,6 @@ import com.edu.tutor_platform.clazz.entity.ClassDoc;
 public class StudentProfileController {
 
     private final StudentProfileService studentProfileService;
-    private final com.edu.tutor_platform.clazz.service.ParticipantsService participantsService;
-    private final SessionRepository sessionRepository;
-    private final ClassDocRepository classDocRepository;
     // ratingService removed; logic delegated to StudentProfileService
 
     @PreAuthorize("hasRole('ADMIN')")
@@ -63,8 +60,8 @@ public class StudentProfileController {
         return ResponseEntity.ok(student);
     }
 
-    @PutMapping("/profile/{id}")
-    public ResponseEntity<StudentDto> updateStudentByStringId(@PathVariable String id, @RequestBody StudentDto studentDto) {
+    @PutMapping("/{id}")
+    public ResponseEntity<StudentDto> updateStudent(@PathVariable String id, @RequestBody StudentDto studentDto) {
         StudentDto student = studentProfileService.updateStudentProfile(id, studentDto);
         return new ResponseEntity<>(student, HttpStatus.OK);
     }
