@@ -42,8 +42,8 @@ public interface PaymentRepository extends JpaRepository<Payment, String> {
 
         // Aggregate monthly earnings for a tutor for payments marked SUCCESS (or
         // completed)
-        @Query(value = "SELECT EXTRACT(MONTH FROM p.completed_at) as \"month\", SUM(p.amount) as total " +
-                        "FROM public.payment p " +
+        @Query(value = "SELECT EXTRACT(MONTH FROM p.completed_at) as payment_month, SUM(p.amount) as total " +
+                        "FROM payment p " +
                         "WHERE p.tutor_id = :tutorId AND p.status = 'SUCCESS' " +
                         "GROUP BY EXTRACT(MONTH FROM p.completed_at)", nativeQuery = true)
         List<Object[]> sumAmountGroupedByMonth(@Param("tutorId") Long tutorId);
