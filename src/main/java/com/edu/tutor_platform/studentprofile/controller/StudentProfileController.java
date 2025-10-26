@@ -64,7 +64,8 @@ public class StudentProfileController {
     }
 
     @PutMapping("/profile/{id}")
-    public ResponseEntity<StudentDto> updateStudentByStringId(@PathVariable String id, @RequestBody StudentDto studentDto) {
+    public ResponseEntity<StudentDto> updateStudentByStringId(@PathVariable String id,
+            @RequestBody StudentDto studentDto) {
         StudentDto student = studentProfileService.updateStudentProfile(id, studentDto);
         return new ResponseEntity<>(student, HttpStatus.OK);
     }
@@ -348,6 +349,7 @@ public class StudentProfileController {
             return ResponseEntity.internalServerError().body(Map.of("message", e.getMessage()));
         }
     }
+
     @PostMapping("/{studentId}/set-rating")
     public ResponseEntity<?> setQuickRating(@PathVariable Long studentId, @RequestBody RatingQuickRequest request) {
         try {
