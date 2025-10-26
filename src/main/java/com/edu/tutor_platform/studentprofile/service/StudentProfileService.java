@@ -8,6 +8,8 @@ import com.edu.tutor_platform.studentprofile.dto.StudentProfileResponse;
 import com.edu.tutor_platform.studentprofile.dto.StudentAcademicInfoDTO;
 import com.edu.tutor_platform.studentprofile.dto.StudentProfileInfoRespondDTO;
 import com.edu.tutor_platform.studentprofile.dto.StudentProfilePaymentRespondDTO;
+import com.edu.tutor_platform.studentprofile.dto.ClasssDetailResponseDto;
+import com.edu.tutor_platform.studentprofile.dto.StudentUpcomingClassResponseDto;
 import com.edu.tutor_platform.studentprofile.entity.StudentProfile;
 import com.edu.tutor_platform.studentprofile.enums.StudentProfileStatus;
 import com.edu.tutor_platform.studentprofile.entity.Membership;
@@ -15,7 +17,6 @@ import com.edu.tutor_platform.studentprofile.repository.StudentProfileRepository
 import com.edu.tutor_platform.user.entity.User;
 import com.edu.tutor_platform.user.service.RefreshTokenService;
 import com.edu.tutor_platform.studentprofile.exception.StudentNotFoundException;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,18 +25,147 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import com.edu.tutor_platform.rating.dto.RatingQuickRequest;
+import com.edu.tutor_platform.rating.entity.Rating;
+import com.edu.tutor_platform.rating.repository.RatingRepository;
+import com.edu.tutor_platform.tutorprofile.service.TutorProfileService;
+import com.edu.tutor_platform.tutorprofile.entity.TutorProfile;
+import com.edu.tutor_platform.session.service.SessionService;
+import com.edu.tutor_platform.session.entity.Session;
+import java.math.BigDecimal;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class StudentProfileService {
 
     private final StudentProfileRepository studentProfileRepository;
     private final RefreshTokenService refreshTokenService;
+    private final ObjectMapper objectMapper;
+    private final SessionService sessionService;
+    private final TutorProfileService tutorProfileService;
+    // participantsService removed (no participant check required per request)
+    private final RatingRepository ratingRepository;
+
+    public StudentProfileService(StudentProfileRepository studentProfileRepository, RefreshTokenService refreshTokenService,
+                                 SessionService sessionService, TutorProfileService tutorProfileService,
+                                 RatingRepository ratingRepository) {
+        this.studentProfileRepository = studentProfileRepository;
+        this.refreshTokenService = refreshTokenService;
+        this.objectMapper = new ObjectMapper()
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        this.sessionService = sessionService;
+        this.tutorProfileService = tutorProfileService;
+        this.ratingRepository = ratingRepository;
+    }
+
+    /**
+     * Add a rating for a student after ensuring the student has a participant record
+     * for the class associated with the provided session/class_id.
+     * If no participant/session exists, does not insert and returns a message.
+     */
+    @Transactional
+    public java.util.Map<String, Object> addRatingForStudent(Long studentId, RatingQuickRequest request) {
+        java.util.Map<String, Object> result = new java.util.HashMap<>();
+
+        // Validate rating value
+        if (request.getRatingValue() == null || request.getRatingValue() < 1 || request.getRatingValue() > 5) {
+            result.put("success", false);
+            result.put("message", "ratingValue must be between 1 and 5");
+            return result;
+        }
+
+        // Resolve student
+        StudentProfile student = studentProfileRepository.findById(studentId).orElse(null);
+        if (student == null) {
+            result.put("success", false);
+            result.put("message", "Student profile not found for id: " + studentId);
+            return result;
+        }
+
+        // class_id is required
+        Long classId = request.getClass_id();
+        if (classId == null) {
+            result.put("success", false);
+            result.put("message", "class_id is required");
+            return result;
+        }
+
+        // Find any sessions for this class using classId lookup
+        java.util.List<Session> sessions = sessionService.getSessionsByClassId(classId);
+        if (sessions == null || sessions.isEmpty()) {
+            result.put("success", false);
+            result.put("message", "first need to attend the class");
+            return result;
+        }
+
+        // Resolve tutor
+        TutorProfile tutor;
+        try {
+            tutor = tutorProfileService.getTutorProfileById(request.getTutorId());
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "Invalid or missing tutorId");
+            return result;
+        }
+
+        // Use the first session found for this class
+        Session session = sessions.get(0);
+        com.edu.tutor_platform.clazz.entity.ClassEntity classEntity = session.getClassEntity();
+
+        // Check duplicate rating for the same session+student; if exists, update it
+        java.util.Optional<Rating> existingOpt = ratingRepository.findBySessionAndStudent(session, student);
+        if (existingOpt.isPresent()) {
+            Rating existing = existingOpt.get();
+            existing.setRatingValue(BigDecimal.valueOf(request.getRatingValue()));
+            existing.setReviewText(request.getFeedback());
+            try {
+                ratingRepository.save(existing);
+                // update tutor average
+                tutor.setRating(ratingRepository.findAverageRatingByTutor(tutor));
+                tutorProfileService.save(tutor);
+
+                result.put("success", true);
+                result.put("message", "successfully updated rating");
+                return result;
+            } catch (Exception e) {
+                result.put("success", false);
+                result.put("message", "Failed to update rating: " + e.getMessage());
+                return result;
+            }
+        }
+
+        // Build and save rating (only store required relations and fields)
+        Rating rating = Rating.builder()
+                .student(student)
+                .tutor(tutor)
+                .session(session)
+                .classEntity(classEntity)
+                .ratingValue(BigDecimal.valueOf(request.getRatingValue()))
+                .reviewText(request.getFeedback())
+                .build();
+
+        try {
+            ratingRepository.save(rating);
+            // update tutor average
+            tutor.setRating(ratingRepository.findAverageRatingByTutor(tutor));
+            tutorProfileService.save(tutor);
+
+            result.put("success", true);
+            result.put("message", "successfully added rating");
+            return result;
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "Failed to save rating: " + e.getMessage());
+            return result;
+        }
+    }
 
     @Transactional
     public void createStudentProfile(User user) {
@@ -155,9 +285,9 @@ public class StudentProfileService {
                                                    String status, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         Page<StudentProfile> studentProfiles = studentProfileRepository.searchByAdmin(
-                name != null ? name : "",
-                username != null ? username : "",
-                email != null ? email : "",
+                name,
+                username,
+                email,
                 studentId,
                 status != null ? StudentProfileStatus.valueOf(status) : null,
                 pageable);
@@ -255,6 +385,59 @@ public class StudentProfileService {
         return profiles.stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Calls DB function get_student_classes_with_details(studentId) and returns mapped DTO.
+     */
+    public ClasssDetailResponseDto getAllClassDetails(Long studentId) {
+        String jsonText = studentProfileRepository.getStudentClassesWithDetailsJson(studentId);
+        if (jsonText == null || jsonText.isBlank() || "[]".equals(jsonText.trim())) {
+            ClasssDetailResponseDto empty = new ClasssDetailResponseDto();
+            empty.setGet_student_classes_with_details(List.of());
+            empty.setGet_student_classes_with_details2(List.of());
+            return empty;
+        }
+        try {
+            // Since the DB returns a raw array, we parse it into a List of the nested type
+            JavaType type = objectMapper.getTypeFactory().constructCollectionType(List.class, ClasssDetailResponseDto.ClassDetail.class);
+            List<ClasssDetailResponseDto.ClassDetail> details = objectMapper.readValue(jsonText, type);
+            
+            // Then, we wrap this list in our main response DTO. Set both fields so callers
+            // reading either root key will find the parsed list.
+            ClasssDetailResponseDto dto = new ClasssDetailResponseDto();
+            dto.setGet_student_classes_with_details(details);
+            dto.setGet_student_classes_with_details2(details);
+            return dto;
+        } catch (Exception e) {
+            log.error("Failed to parse get_student_classes_with_details JSON for student {}: {}", studentId, e.getMessage());
+            throw new RuntimeException("Failed to parse class details response");
+        }
+    }
+
+    public StudentUpcomingClassResponseDto getUpcomingClasses(Long studentId) {
+        String jsonText = studentProfileRepository.getStudentUpcomingClassesJson(studentId);
+
+        if (jsonText == null || jsonText.isBlank() || "[]".equals(jsonText.trim())) {
+            return StudentUpcomingClassResponseDto.builder().upcoming(false).build();
+        }
+
+        try {
+            JavaType type = objectMapper.getTypeFactory().constructCollectionType(List.class, StudentUpcomingClassResponseDto.UpcomingClassDetail.class);
+            List<StudentUpcomingClassResponseDto.UpcomingClassDetail> details = objectMapper.readValue(jsonText, type);
+
+            if (details.isEmpty()) {
+                return StudentUpcomingClassResponseDto.builder().upcoming(false).build();
+            }
+
+            return StudentUpcomingClassResponseDto.builder()
+                    .upcoming(true)
+                    .upcomingClasses(details)
+                    .build();
+        } catch (Exception e) {
+            log.error("Failed to parse get_student_upcoming_classes JSON for student {}: {}", studentId, e.getMessage());
+            throw new RuntimeException("Failed to parse upcoming class details response");
+        }
     }
 
     @Transactional

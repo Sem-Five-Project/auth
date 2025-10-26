@@ -36,11 +36,11 @@ public interface StudentProfileRepository extends JpaRepository<StudentProfile, 
     Long countByStatus(StudentProfileStatus studentProfileStatus);
 
     @Query("SELECT sp FROM StudentProfile sp JOIN sp.user u WHERE " +
-            "(:name IS NULL OR LOWER(CONCAT(u.firstName, ' ', u.lastName)) LIKE LOWER(CONCAT('%', :name, '%'))) AND " +
-            "(:username IS NULL OR LOWER(u.username) LIKE LOWER(CONCAT('%', :username, '%'))) AND " +
-            "(:email IS NULL OR LOWER(u.email) LIKE LOWER(CONCAT('%', :email, '%'))) AND " +
+            "(:name IS NULL OR LOWER(CAST(u.firstName AS string) || ' ' || CAST(u.lastName AS string)) LIKE LOWER('%' || CAST(:name AS string) || '%')) AND " +
+            "(:username IS NULL OR LOWER(CAST(u.username AS string)) LIKE LOWER('%' || CAST(:username AS string) || '%')) AND " +
+            "(:email IS NULL OR LOWER(CAST(u.email AS string)) LIKE LOWER('%' || CAST(:email AS string) || '%')) AND " +
             "(:studentId IS NULL OR sp.studentId = :studentId) AND " +
-            "(:studentProfileStatus IS NULL OR sp.status = :studentProfileStatus)")
+            "(:studentProfileStatus IS NULL OR sp.status = CAST(:studentProfileStatus AS string))")
     Page<StudentProfile> searchByAdmin(
             @Param("name") String name,
             @Param("username") String username,
@@ -57,4 +57,11 @@ public interface StudentProfileRepository extends JpaRepository<StudentProfile, 
 
     @Query(nativeQuery = true, value = "SELECT * FROM public.get_student_payment_history(:studentId, :period)")
     List<StudentProfilePaymentRespondDTO> findPaymentHistoryByStudentId(@Param("studentId") Long studentId, @Param("period") String period);
+
+        // Call Supabase/PostgreSQL function that returns nested JSONB, cast to text for transport
+        @Query(value = "SELECT public.get_student_classes_with_details2(:studentId)::text", nativeQuery = true)
+        String getStudentClassesWithDetailsJson(@Param("studentId") Long studentId);
+
+        @Query(value = "SELECT public.get_student_upcoming_classes(:studentId)::text", nativeQuery = true)
+        String getStudentUpcomingClassesJson(@Param("studentId") Long studentId);
 }

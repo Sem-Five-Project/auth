@@ -14,10 +14,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.edu.tutor_platform.payment.dto.RefundRequestDTO;
-import com.edu.tutor_platform.payment.dto.TutorEarningsAnalyticsDTO;
+import org.springframework.security.access.prepost.PreAuthorize;
+import com.edu.tutor_platform.payment.entity.Payment;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,17 +93,19 @@ public class PaymentController {
         }
     }
 
-    @GetMapping("/validate")
-    public ResponseEntity<Map<String, Object>> checkPaymentStatus(@RequestBody Map<String, Object> body) {
-        Object idObj = body.get("payment_id");
-        boolean pending = false;
-        if (idObj instanceof String pid && !pid.isBlank()) {
-            pending = paymentService.isPaymentPendingByUuid(pid);
+        @PostMapping("/validate")
+        public ResponseEntity<Map<String, Object>> checkPaymentStatus(@RequestBody Map<String, Object> body) {
+            Object idObj = body.get("payment_id");
+            boolean pending = false;
+            if (idObj instanceof String pid && !pid.isBlank()) {
+                pending = paymentService.isPaymentPendingByUuid(pid);
+            }
+            Map<String, Object> resp = new HashMap<>();
+            resp.put("success", pending);
+            return ResponseEntity.ok(resp);
         }
-        Map<String, Object> resp = new HashMap<>();
-        resp.put("success", pending);
-        return ResponseEntity.ok(resp);
-    }
+
+
 
     @PostMapping("/refund")
     public ResponseEntity<Map<String, Object>> refund(@RequestBody RefundRequestDTO request) {
@@ -136,6 +140,7 @@ public class PaymentController {
 
     @PostMapping("/payhere/notify")
     public ResponseEntity<String> handlePayHereNotify(@RequestParam Map<String, String> payload) {
+        System.out.println("payhere hit");
         try {
             log.info("Received PayHere notification for order_id: {}", payload.get("order_id"));
             paymentService.handleNotify(payload);
@@ -148,4 +153,27 @@ public class PaymentController {
         }
     }
 
+    /**
+     * Admin-only endpoint to retrieve all payments
+     */
+    @GetMapping("/all")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> getAllPayments() {
+        try {
+            List<Payment> payments = paymentService.getAllPayments();
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("count", payments.size());
+            response.put("payments", payments);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Error retrieving all payments: {}", e.getMessage(), e);
+            Map<String, Object> err = new HashMap<>();
+            err.put("success", false);
+            err.put("message", "Failed to retrieve payments: " + e.getMessage());
+            return ResponseEntity.status(500).body(err);
+        }
+    }
+
+  
 }
