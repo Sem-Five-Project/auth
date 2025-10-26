@@ -248,6 +248,14 @@ public class PaymentService {
         private BookingRepository bookingRepository;
         @Autowired
         private ObjectMapper objectMapper;
+        @Autowired
+        private com.edu.tutor_platform.studentprofile.service.StudentProfileService studentProfileService;
+        @Autowired
+        private com.edu.tutor_platform.tutorprofile.service.TutorProfileService tutorProfileService;
+        @Autowired
+        private com.edu.tutor_platform.clazz.service.ClassService classService;
+        @Autowired
+        private com.edu.tutor_platform.notification.service.EmailService emailService;
 
         // App timezone for generating business timestamps (defaults to Sri Lanka)
         @Value("${app.timezone:Asia/Colombo}")
@@ -394,6 +402,26 @@ public class PaymentService {
                                                                 "status", resp.getStatus(),
                                                                 "msg", resp.getMsg()
                                                 ));
+                                                // Best-effort: notify student about refund
+                                                try {
+                                                        Long studentId = p.getStudentId();
+                                                        if (studentId != null) {
+                                                                var student = studentProfileService.getStudentProfileById(studentId);
+                                                                String to = student.getEmail();
+                                                                String subject = "Payment Refunded - paymentId=" + p.getPaymentId();
+                                                                String body = String.format("Hello %s,\n\nYour payment for class %s has been refunded. The refund has been initiated and your bank balance should update within 1-2 business days.\n\nIf you have questions, contact support.",
+                                                                                student.getFullName() != null ? student.getFullName() : (student.getFirstName() + " " + student.getLastName()),
+                                                                                p.getClassId() != null ? p.getClassId().toString() : "N/A");
+                                                                try {
+                                                                        emailService.sendEmail(to, subject, body);
+                                                                        log.info("Sent refund email to student {} for payment {}", to, p.getPaymentId());
+                                                                } catch (java.io.IOException ioe) {
+                                                                        log.error("Failed to send refund email to student {}: {}", to, ioe.getMessage());
+                                                                }
+                                                        }
+                                                } catch (Exception ex) {
+                                                        log.warn("Skipping refund email for payment {}: {}", p.getPaymentId(), ex.getMessage());
+                                                }
                                         } catch (Exception e) {
                                                 log.error("PayHere refund API call failed for payment {}", p.getPaymentId(), e);
                                                 dbOutcome.put("payhere_refund_error", e.getMessage());
@@ -629,7 +657,7 @@ public class PaymentService {
                 String completionStatus = executeCompletion(orderId, payment, confirmDto);
 
                 if ("BOOKED".equalsIgnoreCase(normalize(completionStatus))) {
-                        finalizeSuccessfulPayment(payment, payload);
+                        finalizeSuccessfulPayment(payment, payload, confirmDto);
                 } else {
                         String reason = completionStatus == null
                                         ? "complete_payment returned null"
@@ -644,6 +672,27 @@ public class PaymentService {
                 paymentRepository.saveAndFlush(payment);
                 updateBooking(orderId, "CANCELLED", false);
                 log.warn("PayHere reported failure for order {} with status {}", orderId, statusCode);
+                // Best-effort: notify student about failure/cancellation
+                try {
+                        Long studentId = payment.getStudentId();
+                        if (studentId != null) {
+                                var student = studentProfileService.getStudentProfileById(studentId);
+                                String to = student.getEmail();
+                                String subject = "Payment Failed / Cancelled - Order " + (orderId != null ? orderId : "");
+                                String body = String.format("Hello %s,\n\nYour payment for order %s has failed or was cancelled.\nStatus code: %s\nIf you believe this is an error, please contact support.",
+                                                student.getFullName() != null ? student.getFullName() : (student.getFirstName() + " " + student.getLastName()),
+                                                orderId != null ? orderId : "N/A",
+                                                statusCode != null ? statusCode : "N/A");
+                                try {
+                                        emailService.sendEmail(to, subject, body);
+                                        log.info("Sent payment failure email to student {} for order {}", to, orderId);
+                                } catch (java.io.IOException e) {
+                                        log.error("Failed to send failure email to student {}: {}", to, e.getMessage());
+                                }
+                        }
+                } catch (Exception ex) {
+                        log.warn("Skipping failure email for order {}: {}", orderId, ex.getMessage());
+                }
         }
 
         private Optional<PaymentCompleteDTO> extractConfirmPayload(Map<String, String> payload) {
@@ -761,13 +810,94 @@ public class PaymentService {
                 }
         }
 
-        private void finalizeSuccessfulPayment(Payment payment, Map<String, String> payload) {
+        private void finalizeSuccessfulPayment(Payment payment, Map<String, String> payload, PaymentCompleteDTO confirmDto) {
                 applyPayHereDetails(payment, payload);
                 payment.setStatus("SUCCESS");
                 payment.setCompletedAt(LocalDateTime.now(ZoneId.of(appTimeZone)));
                 paymentRepository.saveAndFlush(payment);
                 updateBooking(payment.getOrderId(), "CONFIRMED", true);
                 log.info("Payment {} marked SUCCESS after complete_payment", payment.getPaymentId());
+
+                // Best-effort: send emails to student and tutor
+                try {
+                        Long studentId = coalesce(confirmDto.getStudentId(), payment.getStudentId());
+                        Long tutorId = coalesce(confirmDto.getTutorId(), payment.getTutorId());
+                        Long classId = payment.getClassId();
+                        Number amtNumber = coalesce(confirmDto.getAmount(), payment.getAmount());
+                        Double amount = amtNumber == null ? null : amtNumber.doubleValue();
+
+                        // If tutorId missing but classId provided, resolve tutor from class
+                        if ((tutorId == null || tutorId == 0L) && classId != null) {
+                                try {
+                                        var cls = classService.getClassById(classId);
+                                        tutorId = cls.getTutorId();
+                                } catch (Exception ex) {
+                                        log.warn("Unable to resolve tutor from classId {}: {}", classId, ex.getMessage());
+                                }
+                        }
+
+                        sendPaymentSuccessEmails(studentId, tutorId, classId, amount, payment.getPaymentId());
+                } catch (Exception ex) {
+                        log.error("Failed to send success emails for payment {}: {}", payment.getPaymentId(), ex.getMessage(), ex);
+                }
+        }
+
+        private void sendPaymentSuccessEmails(Long studentId, Long tutorId, Long classId, Double amount, String paymentId) {
+                if (studentId != null) {
+                        try {
+                                var student = studentProfileService.getStudentProfileById(studentId);
+                                String studentEmail = student.getEmail();
+                                String studentName = (student.getFullName() != null && !student.getFullName().isBlank()) ? student.getFullName() : (student.getFirstName() + " " + student.getLastName());
+                                String tutorName = "";
+                                if (tutorId != null) {
+                                        try {
+                                                var tutor = tutorProfileService.getTutorById(tutorId);
+                                                tutorName = tutor.getUser().getFirstName() + " " + tutor.getUser().getLastName();
+                                        } catch (Exception ex) {
+                                                log.warn("Unable to fetch tutor {}: {}", tutorId, ex.getMessage());
+                                        }
+                                }
+
+                                String subject = "Payment Successful - Class " + (classId != null ? classId : "");
+                                String body = String.format("Hello %s,\n\nYour payment (id=%s) for class %s with tutor %s has been received successfully.\nAmount: %s\n\nThank you.",
+                                                studentName != null ? studentName : "Student",
+                                                paymentId,
+                                                classId != null ? classId.toString() : "N/A",
+                                                tutorName.isBlank() ? "N/A" : tutorName,
+                                                amount != null ? amount.toString() : "N/A");
+
+                                try {
+                                        emailService.sendEmail(studentEmail, subject, body);
+                                        log.info("Sent payment success email to student {} for payment {}", studentEmail, paymentId);
+                                } catch (java.io.IOException e) {
+                                        log.error("Failed to send email to student {}: {}", studentEmail, e.getMessage());
+                                }
+                        } catch (Exception ex) {
+                                log.warn("Skipping student email for payment {}: {}", paymentId, ex.getMessage());
+                        }
+                }
+
+                if (tutorId != null) {
+                        try {
+                                var tutor = tutorProfileService.getTutorById(tutorId);
+                                String tutorEmail = tutor.getUser().getEmail();
+                                String subject = "A student has paid - Class " + (classId != null ? classId : "");
+                                String body = String.format("Hello %s,\n\nStudent with id %s has completed payment (id=%s) for class %s.\nAmount: %s\n\nPlease check your schedule and prepare for the session.",
+                                                tutor.getUser().getFirstName() + " " + tutor.getUser().getLastName(),
+                                                studentId != null ? studentId.toString() : "N/A",
+                                                paymentId,
+                                                classId != null ? classId.toString() : "N/A",
+                                                amount != null ? amount.toString() : "N/A");
+                                try {
+                                        emailService.sendEmail(tutorEmail, subject, body);
+                                        log.info("Sent payment notification email to tutor {} for payment {}", tutorEmail, paymentId);
+                                } catch (java.io.IOException e) {
+                                        log.error("Failed to send email to tutor {}: {}", tutorEmail, e.getMessage());
+                                }
+                        } catch (Exception ex) {
+                                log.warn("Skipping tutor email for payment {}: {}", paymentId, ex.getMessage());
+                        }
+                }
         }
 
         private void triggerAutomaticRefund(Payment payment, Map<String, String> payload, String reason) {
@@ -790,6 +920,26 @@ public class PaymentService {
                         PayHereRefundResponse resp = payHereService.refund(payHerePaymentId,
                                         reason != null ? reason : "Automatic refund due to slot conflict");
                         log.info("PayHere refund attempted for payment {} -> status {}", payment.getPaymentId(), resp.getStatus());
+                        // Notify student that refund was issued
+                        try {
+                                Long studentId = payment.getStudentId();
+                                if (studentId != null) {
+                                        var student = studentProfileService.getStudentProfileById(studentId);
+                                        String to = student.getEmail();
+                                        String subject = "Payment Refunded - paymentId=" + payment.getPaymentId();
+                                        String body = String.format("Hello %s,\n\nYour recent payment for class %s has been refunded due to a scheduling conflict. The refund has been initiated; please allow up to 2 business days for your bank to show the credit.",
+                                                        student.getFullName() != null ? student.getFullName() : (student.getFirstName() + " " + student.getLastName()),
+                                                        payment.getClassId() != null ? payment.getClassId().toString() : "N/A");
+                                        try {
+                                                emailService.sendEmail(to, subject, body);
+                                                log.info("Sent refund email to student {} for payment {}", to, payment.getPaymentId());
+                                        } catch (java.io.IOException ioe) {
+                                                log.error("Failed to send refund email to student {}: {}", to, ioe.getMessage());
+                                        }
+                                }
+                        } catch (Exception ex) {
+                                log.warn("Skipping refund email for payment {}: {}", payment.getPaymentId(), ex.getMessage());
+                        }
                 } catch (Exception ex) {
                         log.error("Failed to call PayHere refund API for payment {}", payment.getPaymentId(), ex);
                 }
@@ -840,10 +990,6 @@ public class PaymentService {
                                 payment.getPayherePaymentId(),
                                 bookingStatus);
         }
-
-        /**
-         * Retrieve all payments - for admin use only
-         */
         @Transactional
         public List<Payment> getAllPayments() {
                 return paymentRepository.findAll();
