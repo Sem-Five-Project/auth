@@ -39,6 +39,16 @@ public interface PaymentRepository extends JpaRepository<Payment, String> {
     @Query("SELECT COUNT(p) > 0 FROM Payment p WHERE p.slotId = :slotId AND p.studentId = :studentId AND p.status = 'PENDING'")
     Boolean hasPendingPaymentForSlot(@Param("slotId") Long slotId, @Param("studentId") Long studentId);
 
+    // Find successful payments by tutor ID and year for analytics
+    @Query("SELECT p FROM Payment p WHERE p.tutorId = :tutorId " +
+           "AND p.status = 'SUCCESS' " +
+           "AND YEAR(p.completedAt) = :year " +
+           "ORDER BY p.completedAt")
+    List<Payment> findSuccessfulPaymentsByTutorIdAndYear(
+            @Param("tutorId") Long tutorId, 
+            @Param("year") int year
+    );
+
     // Call Supabase function repay_and_reassign_class using named parameters
     @Query(value = """
             SELECT repay_and_reassign_class(
