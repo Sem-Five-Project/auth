@@ -213,6 +213,7 @@ import com.edu.tutor_platform.payment.entity.Payment;
 import com.edu.tutor_platform.payment.dto.PayHereRefundResponse;
 import com.edu.tutor_platform.payment.dto.PaymentStatusResponse;
 import com.edu.tutor_platform.payment.dto.RefundRequestDTO;
+import com.edu.tutor_platform.payment.dto.TutorEarningsAnalyticsDTO;
 import java.util.Map;
 import java.util.Optional;
 import com.edu.tutor_platform.booking.repository.BookingRepository;
@@ -847,5 +848,95 @@ public class PaymentService {
         @Transactional
         public List<Payment> getAllPayments() {
                 return paymentRepository.findAll();
+        }
+
+        /**
+         * Get tutor earnings analytics with monthly breakdown for the current year
+         */
+        @Transactional
+        public TutorEarningsAnalyticsDTO getTutorEarningsAnalytics(Long tutorId) {
+                if (tutorId == null) {
+                        throw new IllegalArgumentException("Tutor ID is required");
+                }
+
+                // Get current year
+                int currentYear = java.time.LocalDate.now().getYear();
+                
+                // Fetch all successful payments for this tutor in the current year
+                List<Payment> payments = paymentRepository.findSuccessfulPaymentsByTutorIdAndYear(tutorId, currentYear);
+                
+                // Initialize monthly data for all 12 months
+                String[] monthNames = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+                                      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+                List<TutorEarningsAnalyticsDTO.MonthlyData> monthlyDataList = new java.util.ArrayList<>();
+                
+                // Create a map to store earnings by month
+                java.util.Map<Integer, Double> earningsByMonth = new java.util.HashMap<>();
+                for (int i = 1; i <= 12; i++) {
+                        earningsByMonth.put(i, 0.0);
+                }
+                
+                // Calculate earnings for each month
+                double totalEarnings = 0.0;
+                for (Payment payment : payments) {
+                        if (payment.getCompletedAt() != null) {
+                                int month = payment.getCompletedAt().getMonthValue();
+                                double amount = payment.getAmount() != null ? payment.getAmount() : 0.0;
+                                earningsByMonth.put(month, earningsByMonth.get(month) + amount);
+                                totalEarnings += amount;
+                        }
+                }
+                
+                // Build the monthly data list
+                for (int i = 0; i < 12; i++) {
+                        monthlyDataList.add(TutorEarningsAnalyticsDTO.MonthlyData.builder()
+                                        .x(monthNames[i])
+                                        .y(earningsByMonth.get(i + 1))
+                                        .build());
+                }
+                
+                return TutorEarningsAnalyticsDTO.builder()
+                                .monthly(monthlyDataList)
+                                .total(totalEarnings)
+                                .build();
+        }
+
+        /**
+         * Get tutor session counts by month for the current year
+         * Returns a list of 12 integers representing session count for each month
+         */
+        @Transactional
+        public List<Integer> getTutorSessionCountsByMonth(Long tutorId) {
+                if (tutorId == null) {
+                        throw new IllegalArgumentException("Tutor ID is required");
+                }
+
+                // Get current year
+                int currentYear = java.time.LocalDate.now().getYear();
+                
+                // Fetch all successful payments for this tutor in the current year
+                List<Payment> payments = paymentRepository.findSuccessfulPaymentsByTutorIdAndYear(tutorId, currentYear);
+                
+                // Initialize session counts for all 12 months
+                List<Integer> sessionCounts = new java.util.ArrayList<>();
+                java.util.Map<Integer, Integer> countsByMonth = new java.util.HashMap<>();
+                for (int i = 1; i <= 12; i++) {
+                        countsByMonth.put(i, 0);
+                }
+                
+                // Count sessions for each month
+                for (Payment payment : payments) {
+                        if (payment.getCompletedAt() != null) {
+                                int month = payment.getCompletedAt().getMonthValue();
+                                countsByMonth.put(month, countsByMonth.get(month) + 1);
+                        }
+                }
+                
+                // Build the list in order
+                for (int i = 1; i <= 12; i++) {
+                        sessionCounts.add(countsByMonth.get(i));
+                }
+                
+                return sessionCounts;
         }
 }
